@@ -274,7 +274,8 @@ public class H2MigrationTool {
     Connection connection = null;
 
     try {
-      connection = driver.connect("jdbc:h2://" + databaseFileName +";ACCESS_MODE_DATA=r", properties);
+      connection =
+          driver.connect("jdbc:h2://" + databaseFileName + ";ACCESS_MODE_DATA=r", properties);
 
       classToLoad = Class.forName("org.h2.tools.Script", true, loader);
 
@@ -438,9 +439,10 @@ public class H2MigrationTool {
       throws Exception {
 
     DriverRecord firstDriverRecordFrom = getDriverRecord(1, 4);
-    DriverRecord driverRecordTo = versionTo!=null && versionTo.length()>1
-			? getDriverRecord(versionTo)
-				: driverRecords.last();
+    DriverRecord driverRecordTo =
+        versionTo != null && versionTo.length() > 1
+            ? getDriverRecord(versionTo)
+            : driverRecords.last();
 
     if (scriptFileName == null || scriptFileName.isEmpty())
       scriptFileName = databaseFileName + ".sql";
@@ -454,7 +456,7 @@ public class H2MigrationTool {
         && !scriptFileName.toLowerCase().endsWith(".gz")) scriptFileName = scriptFileName + ".gz";
 
     boolean success = false;
-		NavigableSet<DriverRecord> headSet = driverRecords.headSet(firstDriverRecordFrom, true);
+    NavigableSet<DriverRecord> headSet = driverRecords.headSet(firstDriverRecordFrom, true);
     for (DriverRecord driverRecordFrom : headSet.descendingSet()) {
       try {
         scriptFileName =
@@ -463,7 +465,7 @@ public class H2MigrationTool {
         success = true;
         LOGGER.info(
             "Wrote " + driverRecordFrom.toString() + " database to script: " + scriptFileName);
-				break;
+        break;
       } catch (Exception ex) {
         LOGGER.log(
             Level.SEVERE,
@@ -494,11 +496,12 @@ public class H2MigrationTool {
 
     Options options = new Options();
 
-    options.addRequiredOption("l", "lib-dir", true, "(Relative) Folder containing the H2 jar files.");
-    options.addOption(
-        "f", "version-from", true, "Old H2 version of the existing database.");
+    options.addRequiredOption(
+        "l", "lib-dir", true, "(Relative) Folder containing the H2 jar files.");
+    options.addOption("f", "version-from", true, "Old H2 version of the existing database.");
     options.addOption("t", "version-to", true, "New H2 version to upgrade to.");
-    options.addRequiredOption("d", "db-file", true, "The (relative) existing H2 database file (in the old format).");
+    options.addRequiredOption(
+        "d", "db-file", true, "The (relative) existing H2 database file (in the old format).");
     options.addOption("u", "user", true, "The database username.");
     options.addOption("p", "password", true, "The database password.");
     options.addOption("s", "script-file", true, "The export script file.");
@@ -511,7 +514,7 @@ public class H2MigrationTool {
             .desc("The upgrade options [TRUNCATE_LARGE_LENGTH VARIABLE_BINARY]")
             .build());
     options.addOption(null, "force", false, "Overwrite files and continue on failure.");
-    options.addOption("h", "help", false, "Show the help mesage.");
+    options.addOption("h", "help", false, "Show the help message.");
 
     // create the parser
     CommandLineParser parser = new DefaultParser();
@@ -529,7 +532,8 @@ public class H2MigrationTool {
         String ressourceName = line.getOptionValue("lib-dir");
         ressourceName = getAbsoluteFileName(ressourceName);
 
-        String versionFrom = line.hasOption("version-from") ? line.getOptionValue("version-from") : null; 
+        String versionFrom =
+            line.hasOption("version-from") ? line.getOptionValue("version-from") : null;
         String versionTo = line.hasOption("version-to") ? line.getOptionValue("version-to") : null;
 
         String databaseFileName = line.getOptionValue("db-file");
@@ -568,30 +572,30 @@ public class H2MigrationTool {
 
         H2MigrationTool app = new H2MigrationTool();
         app.readDriverRecords(ressourceName);
-				
-				if (versionFrom!=null && versionFrom.length()>1)
-					app.migrate(
-							versionFrom,
-							versionTo,
-							databaseFileName,
-							user,
-							password,
-							scriptFileName,
-							compression,
-							upgradeOptions,
-							overwrite,
-							force);
-				else
-					app.migrateAuto(
-							versionTo,
-							databaseFileName,
-							user,
-							password,
-							scriptFileName,
-							compression,
-							upgradeOptions,
-							overwrite,
-							force);
+
+        if (versionFrom != null && versionFrom.length() > 1)
+          app.migrate(
+              versionFrom,
+              versionTo,
+              databaseFileName,
+              user,
+              password,
+              scriptFileName,
+              compression,
+              upgradeOptions,
+              overwrite,
+              force);
+        else
+          app.migrateAuto(
+              versionTo,
+              databaseFileName,
+              user,
+              password,
+              scriptFileName,
+              compression,
+              upgradeOptions,
+              overwrite,
+              force);
       } catch (Exception ex) {
         Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
       }
