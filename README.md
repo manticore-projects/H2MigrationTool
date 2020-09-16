@@ -2,7 +2,7 @@
 A software tool for migration and old H2 database into a new H2 database format automatically.
 
 ## Usage
-```sh
+```man
   java -jar H2MigrationTool.jar -l <arg> -f <arg> -t <arg> -d <arg>
          [-u <arg>] [-p <arg>] [-s <arg>] [-c <arg>] -o <arg> [--force] [-h]
    -l,--lib-dir <arg>        Folder containing the H2 jar files.
@@ -19,9 +19,9 @@ A software tool for migration and old H2 database into a new H2 database format 
    -h,--help                 Show the help mesage.
 ```
 ## Example
-```sh
-java -jar H2MigrationTool -l /home/are/Downloads/h2-libs                        \
-                          -f 1.4.199 -t 2.0.201 -d /home/are/.manticore/riskbox \
-                          -c ZIP -o TRUNCATE_LARGE_LENGTH VARIABLE_BINARY       \
-                          --force
+```bash
+java -jar H2MigrationTool.jar -l /home/are/Downloads/h2-libs                        \
+                              -f 1.4.199 -t 2.0.201 -d /home/are/.manticore/riskbox \
+                              -c ZIP -o TRUNCATE_LARGE_LENGTH VARIABLE_BINARY       \
+                              --force
 ```
