@@ -20,5 +20,8 @@ A software tool for migration and old H2 database into a new H2 database format 
 ```
 ## Example
 ```sh
-java -jar H2MigrationTool -l /home/are/Downloads -f 1.4.199 -t 2.0.201 -d /home/are/.manticore.csul/riskbox -c ZIP -o TRUNCATE_LARGE_LENGTH VARIABLE_BINARY --force
+java -jar H2MigrationTool -l /home/are/Downloads/h2-libs                        \
+                          -f 1.4.199 -t 2.0.201 -d /home/are/.manticore/riskbox \
+                          -c ZIP -o TRUNCATE_LARGE_LENGTH VARIABLE_BINARY       \
+                          --force
 ```
