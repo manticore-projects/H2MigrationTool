@@ -24,6 +24,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.Comparator;
 import java.util.Properties;
@@ -90,6 +92,24 @@ public class H2MigrationTool {
   }
 
   private final TreeSet<DriverRecord> driverRecords = new TreeSet<>();
+	
+	public static String getAbsoluteFileName(String filename) {
+		String homePath = new File( System.getProperty("user.home")).toURI().getPath();
+    
+    filename = filename.replaceFirst("~", Matcher.quoteReplacement(homePath));
+    filename = filename.replaceFirst("\\$\\{user.home\\}", Matcher.quoteReplacement(homePath));
+		
+		File f = new File(filename);
+		
+		if (!f.isAbsolute()) {
+			Path basePath = Paths.get("").toAbsolutePath();
+
+			Path resolvedPath = basePath.resolve(filename);
+			Path absolutePath = resolvedPath.normalize();
+			f=absolutePath.toFile();
+		}
+		return f.getAbsolutePath();
+	}
 
   private void readDriverRecords(String ressourceName) {
     File driverFolder = new File(ressourceName);
@@ -442,14 +462,21 @@ public class H2MigrationTool {
       }
       try {
         String ressourceName = line.getOptionValue("lib-dir");
+				ressourceName = getAbsoluteFileName(ressourceName);
 
         String versionFrom = line.getOptionValue("version-from");
         String versionTo = line.getOptionValue("version-to");
-        String databaseFileName = line.getOptionValue("db-file");
+        
+				String databaseFileName = line.getOptionValue("db-file");
+				databaseFileName = getAbsoluteFileName(databaseFileName);
+				
         String user = line.hasOption("user") ? line.getOptionValue("user") : "sa";
         String password = line.hasOption("password") ? line.getOptionValue("password") : "";
-        String scriptFileName =
+        
+				String scriptFileName =
             line.hasOption("script-file") ? line.getOptionValue("script-file") : "";
+				if (scriptFileName!=null && scriptFileName.length()>1)
+					scriptFileName = getAbsoluteFileName(scriptFileName);
 
         // "COMPRESSION ZIP";
         String compression =
