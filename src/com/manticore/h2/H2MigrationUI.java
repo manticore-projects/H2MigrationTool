@@ -1,7 +1,18 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Copyright (C) 2020 Andreas Reichel<andreas@manticore-projects.com>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package com.manticore.h2;
@@ -13,7 +24,10 @@ import java.io.FilenameFilter;
 import java.util.TreeSet;
 import javax.swing.*;
 
-/** @author are */
+/**
+ *
+ * @author Andreas Reichel <andreas@manticore-projects.com>
+ */
 public class H2MigrationUI extends JFrame {
 
   private final ImageIcon LIST_ADD_ICON =
@@ -31,13 +45,15 @@ public class H2MigrationUI extends JFrame {
   private final JList<String> databaseFileList = new JList<>();
   private final JList<DriverRecord> fromVersionList = new JList<>();
   private final JList<DriverRecord> toVersionList = new JList<>();
-	
-	private final JComboBox<String> compressionBox = new JComboBox<>(new String[]{"", "ZIP", "GZIP"});
-	private final JComboBox<String> repairModeBox = new JComboBox<>(new String[]{"", "REPAIR", "WORK-AROUND"});
-	
-	private final JCheckBox varbinaryBox = new JCheckBox("Convert BINARY to VARBINARY", true);
-	private final JCheckBox truncateLengthBox = new JCheckBox("Truncate large lengths", true);
-	private final JCheckBox overwriteBox = new JCheckBox("Overwrite", true);
+
+  private final JComboBox<String> compressionBox =
+      new JComboBox<>(new String[] {"", "ZIP", "GZIP"});
+  private final JComboBox<String> repairModeBox =
+      new JComboBox<>(new String[] {"", "REPAIR", "WORK-AROUND"});
+
+  private final JCheckBox varbinaryBox = new JCheckBox("Convert BINARY to VARBINARY", true);
+  private final JCheckBox truncateLengthBox = new JCheckBox("Truncate large lengths", true);
+  private final JCheckBox overwriteBox = new JCheckBox("Overwrite", true);
 
   public H2MigrationUI() {
     super("H2 Database Migration Tool");
@@ -64,9 +80,7 @@ public class H2MigrationUI extends JFrame {
   private final Action migrateAction =
       new AbstractAction("Migrate") {
         @Override
-        public void actionPerformed(ActionEvent ae) {
-          
-        }
+        public void actionPerformed(ActionEvent ae) {}
       };
 
   private final Action readDriverRecordsAction =
@@ -75,26 +89,32 @@ public class H2MigrationUI extends JFrame {
         public void actionPerformed(ActionEvent ae) {
           FileDialog fileDialog =
               new FileDialog(H2MigrationUI.this, "H2 Library Folder", FileDialog.LOAD);
-          fileDialog.setFilenameFilter(new FilenameFilter() {
-						@Override
-						public boolean accept(File file, String string) {
-							return string.toLowerCase().endsWith(".jar");
-						}
-					});
+          fileDialog.setFilenameFilter(
+              new FilenameFilter() {
+                @Override
+                public boolean accept(File file, String string) {
+                  return string.toLowerCase().endsWith(".jar");
+                }
+              });
           fileDialog.setMultipleMode(false);
           fileDialog.setVisible(true);
 
           File file = new File(fileDialog.getDirectory(), fileDialog.getFile());
 
           if (file.isFile()) {
-						file = file.getParentFile();
-					}
+            file = file.getParentFile();
+          }
 
           resourceField.setText(file.getAbsolutePath());
 
           String resourceStr = resourceField.getText();
 
-          TreeSet<DriverRecord> driverRecords = H2MigrationTool.readDriverRecords(resourceStr);
+          TreeSet<DriverRecord> driverRecords = new TreeSet<>();
+		try {
+			driverRecords.addAll(H2MigrationTool.readDriverRecords(resourceStr));
+		} catch (Exception ex) {
+			
+		}
 
           DefaultListModel<DriverRecord> listModel = new DefaultListModel<>();
           listModel.addAll(driverRecords);
@@ -110,7 +130,7 @@ public class H2MigrationUI extends JFrame {
         public void actionPerformed(ActionEvent ae) {
           throw new UnsupportedOperationException(
               "Not supported yet."); // To change body of generated methods, choose Tools |
-                                     // Templates.
+          // Templates.
         }
       };
 
@@ -120,7 +140,7 @@ public class H2MigrationUI extends JFrame {
         public void actionPerformed(ActionEvent ae) {
           throw new UnsupportedOperationException(
               "Not supported yet."); // To change body of generated methods, choose Tools |
-                                     // Templates.
+          // Templates.
         }
       };
 
@@ -168,14 +188,14 @@ public class H2MigrationUI extends JFrame {
 
     constraints.gridx++;
     constraints.weightx = 10.0;
-		constraints.gridwidth=2;
+    constraints.gridwidth = 2;
     centerNorthPanel.add(resourceField, constraints);
 
-    constraints.gridx+=2;
+    constraints.gridx += 2;
     constraints.weightx = 1.0;
-		constraints.gridwidth=1;
+    constraints.gridwidth = 1;
     constraints.fill = GridBagConstraints.NONE;
-		constraints.anchor = GridBagConstraints.FIRST_LINE_START;
+    constraints.anchor = GridBagConstraints.FIRST_LINE_START;
     JButton b = new JButton(readDriverRecordsAction);
     b.setHideActionText(true);
     // b.setBorderPainted(false);
@@ -184,9 +204,9 @@ public class H2MigrationUI extends JFrame {
 
     constraints.gridy++;
     constraints.gridx = 0;
-		constraints.gridwidth=1;
+    constraints.gridwidth = 1;
     constraints.fill = GridBagConstraints.HORIZONTAL;
-		constraints.anchor = GridBagConstraints.BASELINE_LEADING;
+    constraints.anchor = GridBagConstraints.BASELINE_LEADING;
     JLabel databaseFileLabel = new JLabel(getLabel("Database Files", 2));
     databaseFileLabel.setLabelFor(databaseFileList);
     databaseFileLabel.setHorizontalAlignment(JLabel.TRAILING);
@@ -194,13 +214,13 @@ public class H2MigrationUI extends JFrame {
 
     constraints.gridx++;
     constraints.weightx = 10.0;
-		constraints.gridwidth=2;
+    constraints.gridwidth = 2;
     constraints.fill = GridBagConstraints.BOTH;
     centerNorthPanel.add(new JScrollPane(databaseFileList), constraints);
 
-    constraints.gridx+=2;
+    constraints.gridx += 2;
     constraints.weightx = 1.0;
-		constraints.gridwidth=1;
+    constraints.gridwidth = 1;
     constraints.fill = GridBagConstraints.NONE;
     constraints.anchor = GridBagConstraints.FIRST_LINE_START;
     JToolBar databaseFileActionsBar = new JToolBar("Database File Actions", JToolBar.VERTICAL);
@@ -209,15 +229,15 @@ public class H2MigrationUI extends JFrame {
     databaseFileActionsBar.add(addDatabaseFileAction).setHideActionText(true);
     databaseFileActionsBar.add(removeDatabaseFileAction).setHideActionText(true);
     centerNorthPanel.add(databaseFileActionsBar, constraints);
-		
-		constraints.gridy++;
+
+    constraints.gridy++;
     constraints.gridx = 0;
     constraints.fill = GridBagConstraints.HORIZONTAL;
     constraints.anchor = GridBagConstraints.BASELINE_LEADING;
-		JLabel versionListLabel = new JLabel(getLabel("Versions", 2));
+    JLabel versionListLabel = new JLabel(getLabel("Versions", 2));
     versionListLabel.setHorizontalAlignment(JLabel.TRAILING);
     centerNorthPanel.add(versionListLabel, constraints);
-		
+
     JScrollPane fromVersionListScrollPane = new JScrollPane(fromVersionList);
     JPanel centerEastPanel = new JPanel();
     centerEastPanel.add(fromVersionListScrollPane);
@@ -229,58 +249,58 @@ public class H2MigrationUI extends JFrame {
     JPanel centerCenterPanel = new JPanel(new GridLayout(1, 0, 0, 0));
     centerCenterPanel.add(centerEastPanel);
     centerCenterPanel.add(centerWestPanel);
-		
-		constraints.gridx++;
+
+    constraints.gridx++;
     constraints.weightx = 10.0;
-		constraints.gridwidth=2;
+    constraints.gridwidth = 2;
     constraints.fill = GridBagConstraints.BOTH;
-		constraints.insets = new Insets(0, 0, 0, 0);
-		centerNorthPanel.add(centerCenterPanel, constraints);
-		
-		add(centerNorthPanel, BorderLayout.CENTER);
-		
-		constraints.gridy++;
+    constraints.insets = new Insets(0, 0, 0, 0);
+    centerNorthPanel.add(centerCenterPanel, constraints);
+
+    add(centerNorthPanel, BorderLayout.CENTER);
+
+    constraints.gridy++;
     constraints.gridx = 0;
-		constraints.gridwidth=1;
+    constraints.gridwidth = 1;
     constraints.fill = GridBagConstraints.HORIZONTAL;
     constraints.anchor = GridBagConstraints.BASELINE_LEADING;
-		constraints.weightx = 1.0;
-		constraints.insets = new Insets(2, 2, 2, 2);
-		JLabel compressionLabel = new JLabel(getLabel("Compression", 0));
+    constraints.weightx = 1.0;
+    constraints.insets = new Insets(2, 2, 2, 2);
+    JLabel compressionLabel = new JLabel(getLabel("Compression", 0));
     compressionLabel.setLabelFor(compressionBox);
     compressionLabel.setHorizontalAlignment(JLabel.TRAILING);
     centerNorthPanel.add(compressionLabel, constraints);
-		
-		constraints.gridx++;
+
+    constraints.gridx++;
     constraints.weightx = 1.0;
     constraints.fill = GridBagConstraints.NONE;
     centerNorthPanel.add(compressionBox, constraints);
-		
-		constraints.gridx++;
-		centerNorthPanel.add(varbinaryBox, constraints);
-		
-		constraints.gridy++;
+
+    constraints.gridx++;
+    centerNorthPanel.add(varbinaryBox, constraints);
+
+    constraints.gridy++;
     constraints.gridx = 0;
-		constraints.gridwidth=1;
+    constraints.gridwidth = 1;
     constraints.fill = GridBagConstraints.HORIZONTAL;
     constraints.anchor = GridBagConstraints.BASELINE_LEADING;
-		constraints.weightx = 1.0;
-		constraints.insets = new Insets(2, 2, 2, 2);
-		JLabel repairModeLabel = new JLabel(getLabel("Repair Mode", 0));
+    constraints.weightx = 1.0;
+    constraints.insets = new Insets(2, 2, 2, 2);
+    JLabel repairModeLabel = new JLabel(getLabel("Repair Mode", 0));
     repairModeLabel.setLabelFor(repairModeBox);
     repairModeLabel.setHorizontalAlignment(JLabel.TRAILING);
     centerNorthPanel.add(repairModeLabel, constraints);
-		
-		constraints.gridx++;
+
+    constraints.gridx++;
     constraints.weightx = 1.0;
     constraints.fill = GridBagConstraints.NONE;
     centerNorthPanel.add(repairModeBox, constraints);
-		
-		constraints.gridx++;
-		centerNorthPanel.add(truncateLengthBox, constraints);
-		
-		constraints.gridy++;
-		centerNorthPanel.add(overwriteBox, constraints);
+
+    constraints.gridx++;
+    centerNorthPanel.add(truncateLengthBox, constraints);
+
+    constraints.gridy++;
+    centerNorthPanel.add(overwriteBox, constraints);
 
     JPanel southEastPanel = new JPanel(new FlowLayout(FlowLayout.LEADING, 6, 2));
     southEastPanel.add(helpButton);
