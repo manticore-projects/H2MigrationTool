@@ -136,4 +136,55 @@ public class CommandLineTest {
       }
     }
   }
+	
+  @Test
+  public void migrateExistingDB() throws Exception {
+
+    String versionFrom = "";
+    String versionTo = "";
+    String databaseName = "~/.manticore.pd_data2/ifrsbox";
+    String compression = "ZIP";
+    String options = "VARIABLE_BINARY";
+
+    String dbFileUriStr = H2MigrationTool.getAbsoluteFileName(databaseName);
+
+    ArrayList<String> args = new ArrayList<>();
+
+    if (versionFrom != null && versionFrom.length() > 0) {
+      args.add("-f");
+      args.add(versionFrom);
+    }
+
+    if (versionTo != null && versionTo.length() > 0) {
+      args.add("-t");
+      args.add(versionTo);
+    }
+
+    if (databaseName != null && databaseName.length() > 0) {
+      args.add("-d");
+      args.add(databaseName);
+    }
+
+    if (compression != null && compression.length() > 0) {
+      args.add("-c");
+      args.add(compression);
+    }
+
+    if (options != null && options.length() > 0) {
+      args.add("-o");
+      args.add(options);
+    }
+		
+    args.add("--force");
+
+    // Example:
+    // -l ~/h2-libs -f 1.4.200 -t 2.0.201 -d ~/ifrsbox -c ZIP -o VARIABLE_BINARY
+    try {
+      H2MigrationTool.main(args.toArray(new String[args.size()]));
+    } catch (Exception ex) {
+      Assert.fail(ex.getMessage());
+    } finally {
+     
+    }
+  }
 }

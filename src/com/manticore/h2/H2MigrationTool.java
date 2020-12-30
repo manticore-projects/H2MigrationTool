@@ -24,14 +24,15 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.sql.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -39,15 +40,12 @@ import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
-/**
- *
- * @author Andreas Reichel <andreas@manticore-projects.com>
- */
+/** @author Andreas Reichel <andreas@manticore-projects.com> */
 public class H2MigrationTool {
 
   public static final Logger LOGGER = Logger.getLogger(H2MigrationTool.class.getName());
 
-  private static final TreeSet<DriverRecord> driverRecords = new TreeSet<>();
+  protected static final TreeSet<DriverRecord> driverRecords = new TreeSet<>();
 
   private enum HookType {
     SQL,
@@ -259,33 +257,103 @@ public class H2MigrationTool {
     return f.getAbsolutePath();
   }
 
+  public static Collection<Path> findFilesinPathRecursively(
+      Path parentPath, int depth, String prefix, String suffix) throws IOException {
+    ArrayList<Path> fileNames = new ArrayList<>();
+    try (Stream<Path> paths =
+        Files.find(
+            parentPath,
+            depth,
+            (path, attr) -> {
+              if (attr.isRegularFile()) {
+                String pathName = path.getFileName().toString().toLowerCase();
+                return (pathName.startsWith(prefix.toLowerCase())
+                    && pathName.endsWith(suffix.toLowerCase()));
+              }
+              return false;
+            })) {
+      paths.collect(Collectors.toCollection(() -> fileNames));
+    }
+    return fileNames;
+  }
+
+  public static Collection<Path> findFilesinPathRecursively(
+      Path parentPath, int depth, String... extensions) throws IOException {
+    ArrayList<Path> fileNames = new ArrayList<>();
+    try (Stream<Path> paths =
+        Files.find(
+            parentPath,
+            depth,
+            (path, attr) -> {
+              if (attr.isRegularFile()) {
+                String pathName = path.toString().toLowerCase();
+
+                for (String s : extensions) {
+                  if (pathName.endsWith(s)) return true;
+                }
+              }
+              return false;
+            })) {
+      paths.collect(Collectors.toCollection(() -> fileNames));
+    }
+    return fileNames;
+  }
+
+  public static Collection<Path> findH2Databases(String pathName) throws IOException {
+    ArrayList<Path> fileNames = new ArrayList<>();
+
+    File folder = new File(pathName);
+    if (folder.exists() && folder.canRead() && folder.isDirectory()) {
+      fileNames.addAll(
+          findFilesinPathRecursively(Path.of(folder.toURI()), Integer.MAX_VALUE, ".mv.db"));
+    }
+    return fileNames;
+  }
+
   public static TreeSet<DriverRecord> readDriverRecords() throws Exception {
     return readDriverRecords("");
   }
 
   public static TreeSet<DriverRecord> readDriverRecords(String resourceName) throws Exception {
 
-    File driverFolder;
+    Path myPath;
+    FileSystem fileSystem = null;
+
     if (resourceName != null && resourceName.length() > 0) {
-      driverFolder = new File(resourceName);
+      myPath = new File(resourceName).toPath();
     } else {
       URL resourceUrl = H2MigrationTool.class.getResource("/drivers");
       URI resourceUri = resourceUrl.toURI();
-      driverFolder = new File(resourceUri);
+      if (resourceUri.getScheme().equals("jar")) {
+        fileSystem = FileSystems.newFileSystem(resourceUri, Collections.<String, Object>emptyMap());
+        myPath = fileSystem.getPath("/drivers");
+      } else {
+        myPath = Paths.get(resourceUri);
+      }
     }
 
-    FilenameFilter filenameFilter =
-        new FilenameFilter() {
-          @Override
-          public boolean accept(File file, String string) {
-            String s = string.toLowerCase();
-            return s.startsWith("h2") && s.endsWith(".jar");
-          }
-        };
-    for (File file : driverFolder.listFiles(filenameFilter)) {
-      LOGGER.info("Found H2 library " + file.getAbsolutePath());
+    LOGGER.info(myPath.toString());
+    for (Path path : findFilesinPathRecursively(myPath, 1, "h2", ".jar")) {
+      LOGGER.info("Found H2 library " + path.getFileName().toString());
       try {
-        URL url = file.toURI().toURL();
+        URI resourceUri = path.toUri();
+        URL url = path.toUri().toURL();
+
+        // @todo: For any reason we can't load a Jar from inside a Jar
+        // so we have to extract a local copy first
+        // investigate, if the is a better solution, e. g. a special ClassLoader
+        if (resourceUri.getScheme().equals("jar")) {
+          String fileName = path.getFileName().toString();
+
+          File tmpFile = new File(System.getProperty("java.io.tmpdir"), fileName);
+          tmpFile.deleteOnExit();
+
+          Files.copy(url.openStream(), tmpFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+          url = tmpFile.toURI().toURL();
+        }
+
+        LOGGER.fine("Load JAR file from: " + url.toExternalForm());
         URLClassLoader loader =
             new URLClassLoader(new URL[] {url}, H2MigrationTool.class.getClassLoader());
 
@@ -295,20 +363,7 @@ public class H2MigrationTool {
         Object instance = classToLoad.newInstance();
         Object result = method.invoke(instance);
 
-        Driver driver = (Driver) instance;
-
-        // LOGGER.info("major: " + driver.getMajorVersion());
-        // LOGGER.info("minor: " + driver.getMinorVersion());
-        if (driver.getMajorVersion() == 2)
-          // @fixme: for unknown reason, we need to load some classes explicitely with 2.0.201 only
-          try {
-            loader.loadClass("org.h2.table.InformationSchemaTable");
-            loader.loadClass("org.h2.mvstore.MVMap$2");
-            loader.loadClass("org.h2.mvstore.MVMap$2$1");
-            loader.loadClass("org.h2.index.MetaIndex");
-          } catch (Exception ex1) {
-            LOGGER.log(Level.SEVERE, "Failed to load additional classes.", ex1);
-          }
+        Driver driver = getDriverFromInstance(loader, instance);
 
         Properties properties = new Properties();
         properties.setProperty("user", "sa");
@@ -336,10 +391,32 @@ public class H2MigrationTool {
         connection.close();
         loader.close();
       } catch (Exception ex) {
-
+        LOGGER.log(Level.SEVERE, "Failed to load the driver " + path.getFileName().toString(), ex);
       }
     }
+
+    LOGGER.fine("Driver Records loaded: " + driverRecords.size());
+
+    if (fileSystem != null) fileSystem.close();
+
     return driverRecords;
+  }
+
+  private static Driver getDriverFromInstance(ClassLoader loader, Object instance) {
+    Driver driver = (Driver) instance;
+
+    if (driver.getMajorVersion() == 2)
+      // @fixme: for unknown reason, we need to load some classes explicitely with 2.0.201 only
+      try {
+        loader.loadClass("org.h2.table.InformationSchemaTable");
+        loader.loadClass("org.h2.mvstore.MVMap$2");
+        loader.loadClass("org.h2.mvstore.MVMap$2$1");
+        loader.loadClass("org.h2.index.MetaIndex");
+        loader.loadClass("org.h2.api.ErrorCode");
+      } catch (Exception ex) {
+        LOGGER.log(Level.SEVERE, "Failed to load additional classes.", ex);
+      }
+    return driver;
   }
 
   public static Driver loadDriver(String version) throws Exception {
@@ -375,18 +452,7 @@ public class H2MigrationTool {
       Object instance = classToLoad.newInstance();
       Object result = method.invoke(instance);
 
-      driver = (Driver) instance;
-
-      if (driver.getMajorVersion() == 2)
-        // @fixme: for unknown reason, we need to load some classes explicitely with 2.0.201 only
-        try {
-          loader.loadClass("org.h2.table.InformationSchemaTable");
-          loader.loadClass("org.h2.mvstore.MVMap$2");
-          loader.loadClass("org.h2.mvstore.MVMap$2$1");
-          loader.loadClass("org.h2.index.MetaIndex");
-        } catch (Exception ex1) {
-          LOGGER.log(Level.SEVERE, "Failed to load additional classes.", ex1);
-        }
+      driver = getDriverFromInstance(loader, instance);
 
       return driver;
     } finally {
@@ -513,8 +579,7 @@ public class H2MigrationTool {
     properties.setProperty("password", password);
 
     URL url = driverRecord.url;
-    URLClassLoader loader =
-        new URLClassLoader(new URL[] {url}, H2MigrationTool.class.getClassLoader());
+    URLClassLoader loader = new URLClassLoader(new URL[] {url});
 
     Class classToLoad = Class.forName("org.h2.Driver", true, loader);
 
@@ -522,18 +587,7 @@ public class H2MigrationTool {
     Object instance = classToLoad.newInstance();
     Object result = method.invoke(instance);
 
-    Driver driver = (Driver) instance;
-
-    if (driver.getMajorVersion() == 2)
-      // @fixme: for unknown reason, we need to load some classes explicitely with 2.0.201 only
-      try {
-        loader.loadClass("org.h2.table.InformationSchemaTable");
-        loader.loadClass("org.h2.mvstore.MVMap$2");
-        loader.loadClass("org.h2.mvstore.MVMap$2$1");
-        loader.loadClass("org.h2.index.MetaIndex");
-      } catch (Exception ex1) {
-        LOGGER.log(Level.SEVERE, "Failed to load additional classes.", ex1);
-      }
+    Driver driver = getDriverFromInstance(loader, instance);
 
     Connection connection = null;
 
@@ -542,7 +596,7 @@ public class H2MigrationTool {
       //          driver.connect("jdbc:h2://" + databaseFileName + ";ACCESS_MODE_DATA=r",
       // properties);
 
-      connection = driver.connect("jdbc:h2://" + databaseFileName + "", properties);
+      connection = driver.connect("jdbc:h2://" + databaseFileName + ";ACCESS_MODE_DATA=r", properties);
 
       List<String> commands = executeHooks(connection, HookStage.IMPORT);
 
@@ -566,7 +620,7 @@ public class H2MigrationTool {
 
       try {
         loader.close();
-      } catch (IOException ex) {
+      } catch (Exception ex) {
         LOGGER.log(Level.FINEST, null, ex);
       }
     }
@@ -592,8 +646,7 @@ public class H2MigrationTool {
     properties.setProperty("password", password);
 
     URL url = driverRecord.url;
-    URLClassLoader loader =
-        new URLClassLoader(new URL[] {url}, H2MigrationTool.class.getClassLoader());
+    URLClassLoader loader = new URLClassLoader(new URL[] {url});
 
     Class classToLoad = Class.forName("org.h2.Driver", true, loader);
 
@@ -601,18 +654,7 @@ public class H2MigrationTool {
     Object instance = classToLoad.newInstance();
     Object result = method.invoke(instance);
 
-    Driver driver = (Driver) instance;
-
-    if (driver.getMajorVersion() == 2)
-      // @fixme: for unknown reason, we need to load some classes explicitely with 2.0.201 only
-      try {
-        loader.loadClass("org.h2.table.InformationSchemaTable");
-        loader.loadClass("org.h2.mvstore.MVMap$2");
-        loader.loadClass("org.h2.mvstore.MVMap$2$1");
-        loader.loadClass("org.h2.index.MetaIndex");
-      } catch (Exception ex1) {
-        LOGGER.log(Level.SEVERE, "Failed to load additional classes.", ex1);
-      }
+    Driver driver = getDriverFromInstance(loader, instance);
 
     File dbFile = new File(databaseFileName + ".mv.db");
     if (dbFile.exists()) {
@@ -644,19 +686,17 @@ public class H2MigrationTool {
 
       stat.execute("ANALYZE SAMPLE_SIZE 0");
       stat.execute("SHUTDOWN COMPACT");
-
-      return new ScriptResult(scriptFileName, commands);
-
     } finally {
       if (stat != null) stat.close();
       if (connection != null) connection.close();
 
       try {
         loader.close();
-      } catch (IOException ex) {
+      } catch (Exception ex) {
         LOGGER.log(Level.FINEST, null, ex);
       }
     }
+    return new ScriptResult(scriptFileName, commands);
   }
 
   public void migrate(
@@ -778,7 +818,7 @@ public class H2MigrationTool {
         fileName = fileName.substring(0, fileName.length() - ".mv.db".length());
         databaseNames.add(fileName);
 
-        LOGGER.info("added DB: " + databaseFileName);
+        LOGGER.info("added DB: " + fileName);
       }
     } else {
       if (databaseFileName.toLowerCase().endsWith(".mv.db")) {
@@ -789,6 +829,10 @@ public class H2MigrationTool {
 
       databaseNames.add(databaseFileName);
     }
+
+    if (driverRecords.isEmpty())
+      throw new Exception(
+          "No H2 libraries found and loaded yet. Please define, where to load the H2 libraries from.");
 
     ArrayList<String> commands = new ArrayList<>();
 
@@ -875,7 +919,7 @@ public class H2MigrationTool {
     options.addOption("l", "lib-dir", true, "(Relative) Folder containing the H2 jar files.");
     options.addOption("f", "version-from", true, "Old H2 version of the existing database.");
     options.addOption("t", "version-to", true, "New H2 version to upgrade to.");
-    options.addRequiredOption(
+    options.addOption(
         "d", "db-file", true, "The (relative) existing H2 database file (in the old format).");
     options.addOption("u", "user", true, "The database username.");
     options.addOption("p", "password", true, "The database password.");
@@ -916,8 +960,7 @@ public class H2MigrationTool {
                 }
 
                 try {
-                  H2MigrationTool app = new H2MigrationTool();
-                  app.readDriverRecords("");
+                  H2MigrationTool.readDriverRecords();
 
                   H2MigrationUI frame = new H2MigrationUI();
                   frame.buildUI(true);
@@ -926,14 +969,19 @@ public class H2MigrationTool {
                 }
               }
             });
+        return;
       }
 
-      if (line.hasOption("help")) {
+      if (line.hasOption("help") || line.getOptions().length == 0) {
         HelpFormatter formatter = new HelpFormatter();
         formatter.setOptionComparator((Comparator<Option>) null);
         formatter.printHelp("java -jar H2MigrationTool.jar", options, true);
         return;
+      } else if (!line.hasOption("db-file")) {
+        throw new Exception(
+            "Nothing to concert. Please define the Database to convert,\neither by providing the DB Name or the DB Folder.");
       }
+
       try {
         String ressourceName =
             line.hasOption("lib-dir") ? getAbsoluteFileName(line.getOptionValue("lib-dir")) : null;
@@ -962,7 +1010,7 @@ public class H2MigrationTool {
         // "VARIABLE_BINARY"
         String upgradeOptions = "";
         if (line.hasOption("options")) {
-          StringBuffer stringBuffer = new StringBuffer();
+          StringBuilder stringBuffer = new StringBuilder();
           int i = 0;
           for (String s : line.getOptionValues("options")) {
             if (i > 0) stringBuffer.append(" ");
@@ -972,9 +1020,9 @@ public class H2MigrationTool {
           upgradeOptions = stringBuffer.toString();
         }
 
-        boolean overwrite = line.hasOption("force") ? true : false;
+        boolean overwrite = line.hasOption("force");
 
-        boolean force = line.hasOption("force") ? true : false;
+        boolean force = line.hasOption("force");
 
         H2MigrationTool app = new H2MigrationTool();
         H2MigrationTool.readDriverRecords(ressourceName);

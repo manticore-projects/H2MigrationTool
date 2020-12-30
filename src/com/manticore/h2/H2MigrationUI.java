@@ -21,13 +21,9 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.FilenameFilter;
-import java.util.TreeSet;
 import javax.swing.*;
 
-/**
- *
- * @author Andreas Reichel <andreas@manticore-projects.com>
- */
+/** @author Andreas Reichel <andreas@manticore-projects.com> */
 public class H2MigrationUI extends JFrame {
 
   private final ImageIcon LIST_ADD_ICON =
@@ -43,6 +39,7 @@ public class H2MigrationUI extends JFrame {
 
   private final JTextField resourceField = new JTextField(16);
   private final JList<String> databaseFileList = new JList<>();
+  private final DefaultListModel<DriverRecord> listModel = new DefaultListModel<>();;
   private final JList<DriverRecord> fromVersionList = new JList<>();
   private final JList<DriverRecord> toVersionList = new JList<>();
 
@@ -109,18 +106,14 @@ public class H2MigrationUI extends JFrame {
 
           String resourceStr = resourceField.getText();
 
-          TreeSet<DriverRecord> driverRecords = new TreeSet<>();
-		try {
-			driverRecords.addAll(H2MigrationTool.readDriverRecords(resourceStr));
-		} catch (Exception ex) {
-			
-		}
+          try {
+            H2MigrationTool.readDriverRecords(resourceStr);
+          } catch (Exception ex) {
 
-          DefaultListModel<DriverRecord> listModel = new DefaultListModel<>();
-          listModel.addAll(driverRecords);
+          }
 
-          fromVersionList.setModel(listModel);
-          toVersionList.setModel(listModel);
+          listModel.clear();
+          listModel.addAll(H2MigrationTool.driverRecords);
         }
       };
 
@@ -162,6 +155,12 @@ public class H2MigrationUI extends JFrame {
   public void buildUI(boolean visible) {
     setLayout(new BorderLayout(6, 6));
     setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+    listModel.clear();
+    listModel.addAll(H2MigrationTool.driverRecords);
+
+    fromVersionList.setModel(listModel);
+    toVersionList.setModel(listModel);
 
     migrateButton.setDefaultCapable(true);
 
@@ -239,16 +238,12 @@ public class H2MigrationUI extends JFrame {
     centerNorthPanel.add(versionListLabel, constraints);
 
     JScrollPane fromVersionListScrollPane = new JScrollPane(fromVersionList);
-    JPanel centerEastPanel = new JPanel();
-    centerEastPanel.add(fromVersionListScrollPane);
 
     JScrollPane toVersionListScrollPane = new JScrollPane(toVersionList);
-    JPanel centerWestPanel = new JPanel();
-    centerWestPanel.add(toVersionListScrollPane);
 
     JPanel centerCenterPanel = new JPanel(new GridLayout(1, 0, 0, 0));
-    centerCenterPanel.add(centerEastPanel);
-    centerCenterPanel.add(centerWestPanel);
+    centerCenterPanel.add(fromVersionListScrollPane);
+    centerCenterPanel.add(toVersionListScrollPane);
 
     constraints.gridx++;
     constraints.weightx = 10.0;
