@@ -13,8 +13,7 @@ A software tool for migration and old H2 database into a new H2 database format 
    -p,--password <arg>       The database password.
    -s,--script-file <arg>    The export script file.
    -c,--compression <arg>    The Compression Method [ZIP, GZIP]
-   -o,--options <arg>        The upgrade options [TRUNCATE_LARGE_LENGTH
-                             VARIABLE_BINARY]
+   -o,--options <arg>        The upgrade options [VARIABLE_BINARY]
       --force                Overwrite files and continue on failure.
    -h,--help                 Show the help mesage.
 ```
@@ -22,6 +21,6 @@ A software tool for migration and old H2 database into a new H2 database format 
 ```bash
 java -jar H2MigrationTool.jar -l /home/are/Downloads/h2-libs                        \
                               -f 1.4.199 -t 2.0.201 -d /home/are/.manticore/riskbox \
-                              -c ZIP -o TRUNCATE_LARGE_LENGTH VARIABLE_BINARY       \
+                              -c ZIP -o VARIABLE_BINARY                             \
                               --force
 ```
