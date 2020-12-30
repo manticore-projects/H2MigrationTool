@@ -117,60 +117,60 @@ public class H2MigrationTool {
           }
         };
 
-    URL url = H2MigrationTool.class.getResource("com/manticore/hooks/" + versionFrom + "/export");
-
-    if (url != null)
-      try {
-        File d = new File(url.toURI());
-        for (File f : d.listFiles(filenameFilter)) {
-          FileInputStream inputStream;
-          try {
-            inputStream = new FileInputStream(f);
-            String text = IOUtils.toString(inputStream, (String) null);
-            inputStream.close();
-
-            String name = f.getName();
-
-            hooks.add(new Hook(name, HookStage.EXPORT, text));
-
-          } catch (FileNotFoundException ex) {
-            Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
-          } catch (IOException ex) {
-            Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
-          }
-        }
-      } catch (URISyntaxException ex) {
-        Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
-      }
-
-    url =
-        H2MigrationTool.class
-            .getClassLoader()
-            .getResource("com/manticore/hooks/" + versionFrom + "/import");
-
-    if (url != null)
-      try {
-        File d = new File(url.toURI());
-        for (File f : d.listFiles(filenameFilter)) {
-          FileInputStream inputStream;
-          try {
-            inputStream = new FileInputStream(f);
-            String text = IOUtils.toString(inputStream, (String) null);
-            inputStream.close();
-
-            String name = f.getName();
-
-            hooks.add(new Hook(name, HookStage.IMPORT, text));
-
-          } catch (FileNotFoundException ex) {
-            Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
-          } catch (IOException ex) {
-            Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
-          }
-        }
-      } catch (URISyntaxException ex) {
-        Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
-      }
+//    URL url = H2MigrationTool.class.getResource("com/manticore/hooks/" + versionFrom + "/export");
+//
+//    if (url != null)
+//      try {
+//        File d = new File(url.toURI());
+//        for (File f : d.listFiles(filenameFilter)) {
+//          FileInputStream inputStream;
+//          try {
+//            inputStream = new FileInputStream(f);
+//            String text = IOUtils.toString(inputStream, (String) null);
+//            inputStream.close();
+//
+//            String name = f.getName();
+//
+//            hooks.add(new Hook(name, HookStage.EXPORT, text));
+//
+//          } catch (FileNotFoundException ex) {
+//            Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
+//          } catch (IOException ex) {
+//            Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
+//          }
+//        }
+//      } catch (URISyntaxException ex) {
+//        Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
+//      }
+//
+//    url =
+//        H2MigrationTool.class
+//            .getClassLoader()
+//            .getResource("com/manticore/hooks/" + versionFrom + "/import");
+//
+//    if (url != null)
+//      try {
+//        File d = new File(url.toURI());
+//        for (File f : d.listFiles(filenameFilter)) {
+//          FileInputStream inputStream;
+//          try {
+//            inputStream = new FileInputStream(f);
+//            String text = IOUtils.toString(inputStream, (String) null);
+//            inputStream.close();
+//
+//            String name = f.getName();
+//
+//            hooks.add(new Hook(name, HookStage.IMPORT, text));
+//
+//          } catch (FileNotFoundException ex) {
+//            Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
+//          } catch (IOException ex) {
+//            Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
+//          }
+//        }
+//      } catch (URISyntaxException ex) {
+//        Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
+//      }
   }
 
   private void executeCommands(Connection connection, List<String> commands) throws Exception {
@@ -872,7 +872,7 @@ public class H2MigrationTool {
           break;
         } catch (Exception ex) {
           LOGGER.log(
-              Level.FINE,
+              Level.WARNING,
               "Failed to write " + driverRecordFrom.toString() + " database to script",
               ex);
         }

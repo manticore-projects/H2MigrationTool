@@ -142,7 +142,7 @@ public class CommandLineTest {
 
     String versionFrom = "";
     String versionTo = "";
-    String databaseName = "~/.manticore.pd_data2/ifrsbox";
+    String databaseName = "~/.manticore.oplon/riskbox";
     String compression = "ZIP";
     String options = "VARIABLE_BINARY";
 
