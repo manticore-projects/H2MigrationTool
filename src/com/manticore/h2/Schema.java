@@ -38,8 +38,12 @@ public class Schema implements Comparable<Schema> {
   TreeMap<String, Table> tables = new TreeMap<>();
 
   public Schema(String tableSchema, String tableCatalog) {
-    this.tableSchema = tableSchema != null ? tableSchema : "";
-    this.tableCatalog = tableCatalog != null ? tableCatalog : "";
+    this.tableSchema = tableSchema != null
+    ? tableSchema
+    : "";
+    this.tableCatalog = tableCatalog != null
+    ? tableCatalog
+    : "";
   }
 
   public static Collection<Schema> getSchemas(DatabaseMetaData metaData) throws SQLException {
@@ -51,16 +55,18 @@ public class Schema implements Comparable<Schema> {
       while (rs.next()) {
         String tableSchema = rs.getString("TABLE_SCHEM"); // TABLE_SCHEM String => schema name
         String tableCatalog =
-            rs.getString("TABLE_CATALOG"); // TABLE_CATALOG String => catalog name (may be null)
+               rs.getString("TABLE_CATALOG"); // TABLE_CATALOG String => catalog name (may be null)
         Schema schema = new Schema(tableSchema, tableCatalog);
 
         schemas.add(schema);
       }
-      if (schemas.isEmpty()) schemas.add(new Schema("", "."));
+      if (schemas.isEmpty())
+        schemas.add(new Schema("", "."));
 
     } finally {
       try {
-        if (rs != null && !rs.isClosed()) rs.close();
+        if (rs != null && !rs.isClosed())
+          rs.close();
       } catch (Exception ex1) {
 
       }
@@ -80,7 +86,8 @@ public class Schema implements Comparable<Schema> {
   public int compareTo(Schema o) {
     int compareTo = tableCatalog.compareToIgnoreCase(o.tableCatalog);
 
-    if (compareTo == 0) compareTo = tableSchema.compareToIgnoreCase(o.tableSchema);
+    if (compareTo == 0)
+      compareTo = tableSchema.compareToIgnoreCase(o.tableSchema);
 
     return compareTo;
   }

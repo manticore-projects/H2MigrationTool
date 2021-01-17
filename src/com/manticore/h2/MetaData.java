@@ -26,45 +26,49 @@ import java.sql.SQLException;
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class MetaData {
+
   TreeMap<String, Catalog> catalogs = new TreeMap<>();
   Connection con;
 
   public MetaData(Connection con) {
     this.con = con;
   }
-  
+
   public void build() throws SQLException {
     DatabaseMetaData metaData = con.getMetaData();
-    
-    for (Catalog catalog: Catalog.getCatalogs(metaData))
+
+    for (Catalog catalog : Catalog.getCatalogs(metaData))
       put(catalog);
-		
-		for (Schema schema: Schema.getSchemas(metaData)) {
-			put(schema);
-		}
-			
-    for (Table table: Table.getTables(metaData)) {
-			put(table);
+
+    for (Schema schema : Schema.getSchemas(metaData))
+      put(schema);
+
+    for (Table table : Table.getTables(metaData)) {
+      put(table);
       table.getColumns(metaData);
-      table.getIndices(metaData, true);
-      table.getPrimaryKey(metaData);
-		}
-		
+      
+      //"TABLE", "VIEW", "SYSTEM TABLE", "GLOBAL TEMPORARY", "LOCAL TEMPORARY", "ALIAS", "SYNONYM"
+      if (table.tableType.equals("TABLE") || table.tableType.equals("SYSTEM TABLE")) {
+        table.getIndices(metaData, true); 
+        table.getPrimaryKey(metaData);
+      }
+    }
+
   }
-  
+
   public Catalog put(Catalog catalog) {
     return catalogs.put(catalog.tableCatalog.toUpperCase(), catalog);
   }
-  
+
   public Schema put(Schema schema) {
     Catalog catalog = catalogs.get(schema.tableCatalog.toUpperCase());
     return catalog.put(schema);
   }
-  
+
   public Table put(Table table) {
     Catalog catalog = catalogs.get(table.tableCatalog.toUpperCase());
     Schema schema = catalog.get(table.tableSchema.toUpperCase());
-    
+
     return schema.put(table);
   }
 }

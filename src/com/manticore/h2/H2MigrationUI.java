@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package com.manticore.h2;
 
 import java.awt.*;
@@ -23,30 +22,34 @@ import java.io.File;
 import java.io.FilenameFilter;
 import javax.swing.*;
 
-/** @author Andreas Reichel <andreas@manticore-projects.com> */
+/**
+ * @author Andreas Reichel <andreas@manticore-projects.com>
+ */
 public class H2MigrationUI extends JFrame {
 
   private final ImageIcon LIST_ADD_ICON =
-      new ImageIcon(
-          ClassLoader.getSystemResource("com/manticore/icons/16/list-add.png"), "Add to the list.");
+                          new ImageIcon(
+                                  ClassLoader.getSystemResource("com/manticore/icons/16/list-add.png"),
+                                  "Add to the list.");
   private final ImageIcon LIST_REMOVE_ICON =
-      new ImageIcon(
-          ClassLoader.getSystemResource("com/manticore/icons/16/list-remove.png"),
-          "Remove from the list.");
+                          new ImageIcon(
+                                  ClassLoader.getSystemResource("com/manticore/icons/16/list-remove.png"),
+                                  "Remove from the list.");
   private final ImageIcon EDIT_FIND_ICON =
-      new ImageIcon(
-          ClassLoader.getSystemResource("com/manticore/icons/16/edit-find.png"), "Find a File.");
+                          new ImageIcon(
+                                  ClassLoader.getSystemResource("com/manticore/icons/16/edit-find.png"), "Find a File.");
 
   private final JTextField resourceField = new JTextField(16);
   private final JList<String> databaseFileList = new JList<>();
-  private final DefaultListModel<DriverRecord> listModel = new DefaultListModel<>();;
+  private final DefaultListModel<DriverRecord> listModel = new DefaultListModel<>();
+  ;
   private final JList<DriverRecord> fromVersionList = new JList<>();
   private final JList<DriverRecord> toVersionList = new JList<>();
 
   private final JComboBox<String> compressionBox =
-      new JComboBox<>(new String[] {"", "ZIP", "GZIP"});
+                                  new JComboBox<>(new String[]{"", "ZIP", "GZIP"});
   private final JComboBox<String> repairModeBox =
-      new JComboBox<>(new String[] {"", "REPAIR", "WORK-AROUND"});
+                                  new JComboBox<>(new String[]{"", "REPAIR", "WORK-AROUND"});
 
   private final JCheckBox varbinaryBox = new JCheckBox("Convert BINARY to VARBINARY", true);
   private final JCheckBox truncateLengthBox = new JCheckBox("Truncate large lengths", true);
@@ -57,85 +60,85 @@ public class H2MigrationUI extends JFrame {
   }
 
   private final Action helpAction =
-      new AbstractAction("Help") {
-        @Override
-        public void actionPerformed(ActionEvent ae) {
-          throw new UnsupportedOperationException(
-              "Not supported yet."); // To change body of generated methods, choose Tools |
-          // Templates.
-        }
-      };
+                       new AbstractAction("Help") {
+                 @Override
+                 public void actionPerformed(ActionEvent ae) {
+                   throw new UnsupportedOperationException(
+                           "Not supported yet."); // To change body of generated methods, choose Tools |
+                   // Templates.
+                 }
+               };
 
   private final Action exitAction =
-      new AbstractAction("Exit") {
-        @Override
-        public void actionPerformed(ActionEvent ae) {
-          setVisible(false);
-        }
-      };
+                       new AbstractAction("Exit") {
+                 @Override
+                 public void actionPerformed(ActionEvent ae) {
+                   setVisible(false);
+                 }
+               };
 
   private final Action migrateAction =
-      new AbstractAction("Migrate") {
-        @Override
-        public void actionPerformed(ActionEvent ae) {}
-      };
+                       new AbstractAction("Migrate") {
+                 @Override
+                 public void actionPerformed(ActionEvent ae) {
+                 }
+               };
 
   private final Action readDriverRecordsAction =
-      new AbstractAction("Read Drivers", EDIT_FIND_ICON) {
-        @Override
-        public void actionPerformed(ActionEvent ae) {
-          FileDialog fileDialog =
-              new FileDialog(H2MigrationUI.this, "H2 Library Folder", FileDialog.LOAD);
-          fileDialog.setFilenameFilter(
-              new FilenameFilter() {
-                @Override
-                public boolean accept(File file, String string) {
-                  return string.toLowerCase().endsWith(".jar");
-                }
-              });
-          fileDialog.setMultipleMode(false);
-          fileDialog.setVisible(true);
+                       new AbstractAction("Read Drivers", EDIT_FIND_ICON) {
+                 @Override
+                 public void actionPerformed(ActionEvent ae) {
+                   FileDialog fileDialog =
+                              new FileDialog(H2MigrationUI.this, "H2 Library Folder", FileDialog.LOAD);
+                   fileDialog.setFilenameFilter(
+                           new FilenameFilter() {
+                     @Override
+                     public boolean accept(File file, String string) {
+                       return string.toLowerCase().endsWith(".jar");
+                     }
+                   });
+                   fileDialog.setMultipleMode(false);
+                   fileDialog.setVisible(true);
 
-          File file = new File(fileDialog.getDirectory(), fileDialog.getFile());
+                   File file = new File(fileDialog.getDirectory(), fileDialog.getFile());
 
-          if (file.isFile()) {
-            file = file.getParentFile();
-          }
+                   if (file.isFile())
+                     file = file.getParentFile();
 
-          resourceField.setText(file.getAbsolutePath());
+                   resourceField.setText(file.getAbsolutePath());
 
-          String resourceStr = resourceField.getText();
+                   String resourceStr = resourceField.getText();
 
-          try {
-            H2MigrationTool.readDriverRecords(resourceStr);
-          } catch (Exception ex) {
+                   try {
+                     H2MigrationTool.readDriverRecords(resourceStr);
+                   } catch (Exception ex) {
 
-          }
+                   }
 
-          listModel.clear();
-          listModel.addAll(H2MigrationTool.driverRecords);
-        }
-      };
+                   listModel.clear();
+                   listModel.addAll(H2MigrationTool.driverRecords);
+                 }
+               };
 
   private final Action addDatabaseFileAction =
-      new AbstractAction("Add Database File", LIST_ADD_ICON) {
-        @Override
-        public void actionPerformed(ActionEvent ae) {
-          throw new UnsupportedOperationException(
-              "Not supported yet."); // To change body of generated methods, choose Tools |
-          // Templates.
-        }
-      };
+                       new AbstractAction("Add Database File", LIST_ADD_ICON) {
+                 @Override
+                 public void actionPerformed(ActionEvent ae) {
+                   throw new UnsupportedOperationException(
+                           "Not supported yet."); // To change body of generated methods, choose Tools |
+                   // Templates.
+                 }
+               };
 
   private final Action removeDatabaseFileAction =
-      new AbstractAction("Remove Database File", LIST_REMOVE_ICON) {
-        @Override
-        public void actionPerformed(ActionEvent ae) {
-          throw new UnsupportedOperationException(
-              "Not supported yet."); // To change body of generated methods, choose Tools |
-          // Templates.
-        }
-      };
+                       new AbstractAction("Remove Database File", LIST_REMOVE_ICON) {
+                 @Override
+                 public void actionPerformed(ActionEvent ae) {
+                   throw new UnsupportedOperationException(
+                           "Not supported yet."); // To change body of generated methods, choose Tools |
+                   // Templates.
+                 }
+               };
 
   private final JButton helpButton = new JButton(helpAction);
   private final JButton exitButton = new JButton(exitAction);
@@ -165,18 +168,18 @@ public class H2MigrationUI extends JFrame {
     migrateButton.setDefaultCapable(true);
 
     GridBagConstraints constraints =
-        new GridBagConstraints(
-            0,
-            0,
-            1,
-            1,
-            1.0,
-            1.0,
-            GridBagConstraints.BASELINE_LEADING,
-            GridBagConstraints.HORIZONTAL,
-            new Insets(2, 2, 2, 2),
-            0,
-            0);
+                       new GridBagConstraints(
+                               0,
+                               0,
+                               1,
+                               1,
+                               1.0,
+                               1.0,
+                               GridBagConstraints.BASELINE_LEADING,
+                               GridBagConstraints.HORIZONTAL,
+                               new Insets(2, 2, 2, 2),
+                               0,
+                               0);
 
     JPanel centerNorthPanel = new JPanel(new GridBagLayout());
 

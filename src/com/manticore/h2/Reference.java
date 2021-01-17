@@ -23,35 +23,35 @@ import java.util.LinkedList;
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class Reference {
-	String pkTableCatalog;
-	String pkTableSchema;
-	String pkTableName;
-	String fkTableCatalog;
-	String fkTableSchema;
-	String fkTableName;
-	Short updateRule;
-	Short deleteRule;
-	String fkName;
-	String pkName;
-	Short deferrability;
-	
-	LinkedList<String[]> columns = new LinkedList<>();
 
-	public Reference(String pkTableCatalog, String pkTableSchema, String pkTableName,
-									 String fkTableCatalog, String fkTableSchema, String fkTableName, Short updateRule,
-									 Short deleteRule, String fkName, String pkName, Short deferrability) {
-		this.pkTableCatalog = pkTableCatalog;
-		this.pkTableSchema = pkTableSchema;
-		this.pkTableName = pkTableName;
-		this.fkTableCatalog = fkTableCatalog;
-		this.fkTableSchema = fkTableSchema;
-		this.fkTableName = fkTableName;
-		this.updateRule = updateRule;
-		this.deleteRule = deleteRule;
-		this.fkName = fkName;
-		this.pkName = pkName;
-		this.deferrability = deferrability;
-	}
-	
-	
+  String pkTableCatalog;
+  String pkTableSchema;
+  String pkTableName;
+  String fkTableCatalog;
+  String fkTableSchema;
+  String fkTableName;
+  Short updateRule;
+  Short deleteRule;
+  String fkName;
+  String pkName;
+  Short deferrability;
+
+  LinkedList<String[]> columns = new LinkedList<>();
+
+  public Reference(String pkTableCatalog, String pkTableSchema, String pkTableName,
+                   String fkTableCatalog, String fkTableSchema, String fkTableName, Short updateRule,
+                   Short deleteRule, String fkName, String pkName, Short deferrability) {
+    this.pkTableCatalog = pkTableCatalog;
+    this.pkTableSchema = pkTableSchema;
+    this.pkTableName = pkTableName;
+    this.fkTableCatalog = fkTableCatalog;
+    this.fkTableSchema = fkTableSchema;
+    this.fkTableName = fkTableName;
+    this.updateRule = updateRule;
+    this.deleteRule = deleteRule;
+    this.fkName = fkName;
+    this.pkName = pkName;
+    this.deferrability = deferrability;
+  }
+
 }

@@ -23,17 +23,18 @@ import java.util.LinkedList;
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class PrimaryKey {
-	String tableCatalog;
-	String tableSchema;
-	String tableName;
-	String primaryKeyName;
-	
-	LinkedList<String> columnNames = new LinkedList<>();
 
-	public PrimaryKey(String tableCatalog, String tableSchema, String tableName, String primaryKeyName) {
-		this.tableCatalog = tableCatalog;
-		this.tableSchema = tableSchema;
-		this.tableName = tableName;
-		this.primaryKeyName = primaryKeyName;
-	}
+  String tableCatalog;
+  String tableSchema;
+  String tableName;
+  String primaryKeyName;
+
+  LinkedList<String> columnNames = new LinkedList<>();
+
+  public PrimaryKey(String tableCatalog, String tableSchema, String tableName, String primaryKeyName) {
+    this.tableCatalog = tableCatalog;
+    this.tableSchema = tableSchema;
+    this.tableName = tableName;
+    this.primaryKeyName = primaryKeyName;
+  }
 }

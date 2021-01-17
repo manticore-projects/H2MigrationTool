@@ -22,7 +22,6 @@ import java.sql.*;
 
 import java.util.Properties;
 import org.junit.After;
-import org.junit.Before;
 import java.util.logging.Logger;
 import org.junit.*;
 
@@ -30,13 +29,23 @@ import org.junit.*;
  *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
-public class SimpleCreateDBTest {
+public class H2Issue_3003 {
 
   public static final Logger LOGGER = Logger.getLogger(H2MigrationTool.class.getName());
   public static final String H2_VERSION = "2.0.201";
 
   public Connection con = null;
   public String dbFileUriStr;
+
+  public static final String DDL_STR = "CREATE SCHEMA common;\n" +
+                                       "CREATE SEQUENCE common.currency_ref_seq START WITH 0;\n" +
+                                       "CREATE TABLE common.currency\n" +
+                                       "  (\n" +
+                                       "     id_currency   VARCHAR(3) PRIMARY KEY NOT NULL\n" +
+                                       "     , ref_currency NUMBER(3) NOT NULL \n" +
+                                       "     , description VARCHAR(255)\n" +
+                                       "  );\n" +
+                                       "ALTER TABLE common.currency ADD UNIQUE (ref_currency);";
 
   @Before
   public void setUp() throws Exception {
@@ -70,7 +79,9 @@ public class SimpleCreateDBTest {
   @Test
   public void createTableTest() throws SQLException {
     try (Statement st = con.createStatement();) {
-      st.executeUpdate("CREATE TABLE test (id VARCHAR(40) NOT NULL PRIMARY KEY)");
+      for (String command : DDL_STR.split(";"))
+        st.executeUpdate(command);
     }
   }
+
 }

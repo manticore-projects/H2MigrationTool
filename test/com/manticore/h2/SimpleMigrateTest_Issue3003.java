@@ -31,41 +31,24 @@ import org.junit.*;
  *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
-public class SimpleMigrateTest {
+public class SimpleMigrateTest_Issue3003 {
 
   public static final Logger LOGGER = Logger.getLogger(H2MigrationTool.class.getName());
 
-  /*
-   * @Todo: Investigate the Script API Can't test 1.3.175 because: java.lang.NoSuchMethodException:
-   * org.h2.tools.Script.process(java.sql.Connection, java.lang.String, java.lang.String, java.lang.String)
-   */
   public static final String[] H2_VERSIONS =
                                new String[]{
-                                 /*
-                                  * "1.3.175",
-                                  */
                                  "1.4.196", "1.4.197", "1.4.198", "1.4.199", "1.4.200", "2.0.201"
                                };
 
-  /*
-   * @todo: move DDLs and Test SQLs into a text file to read from
-   */
-  public static final String DDL_STR =
-                             "drop table IF EXISTS B cascade;\n" +
-                             "drop table IF EXISTS A cascade;\n" +
-                             "\n" +
-                             "CREATE TABLE a\n" +
-                             "  (\n" +
-                             "     field1 varchar(1)\n" +
-                             "  );\n" +
-                             "\n" +
-                             "CREATE TABLE b\n" +
-                             "  (\n" +
-                             "     field2 varchar(1)\n" +
-                             "  );\n" +
-                             "\n" +
-                             "ALTER TABLE b\n" +
-                             "  ADD FOREIGN KEY (field2) REFERENCES a(field1);";
+  public static final String DDL_STR = "CREATE SCHEMA common;\n" +
+                                       "CREATE SEQUENCE common.currency_ref_seq START WITH 0;\n" +
+                                       "CREATE TABLE common.currency\n" +
+                                       "  (\n" +
+                                       "     id_currency   VARCHAR(3) PRIMARY KEY NOT NULL\n" +
+                                       "     , ref_currency NUMBER(3) NOT NULL \n" +
+                                       "     , description VARCHAR(255)\n" +
+                                       "  );\n" +
+                                       "ALTER TABLE common.currency ADD UNIQUE (ref_currency);";
 
   public ArrayList<String> dbFileUriStr = new ArrayList<>();
 
@@ -124,7 +107,7 @@ public class SimpleMigrateTest {
                 h2File.getCanonicalPath() +
                 " to Version 2.0.201");
 
-        tool.migrateAuto("2.0.201", h2File.getCanonicalPath(), "SA", "", "", "", "", true, true);
+        tool.migrateAuto("2.0.201", h2File.getCanonicalPath(), "SA", "", "", "QUIRKS_MODE", "", true, true);
       }
     }
   }
@@ -148,19 +131,5 @@ public class SimpleMigrateTest {
         tool.migrateAuto(h2File.getCanonicalPath());
       }
     }
-  }
-
-  @Test
-  public void autoConvertTest_Folder() throws Exception {
-
-    H2MigrationTool tool = new H2MigrationTool();
-    H2MigrationTool.readDriverRecords("");
-
-    LOGGER.info(
-            "Will Auto-Convert H2 database file " +
-            "/tmp" +
-            " to Latest Available H2 version");
-
-    tool.migrateAuto("/tmp");
   }
 }

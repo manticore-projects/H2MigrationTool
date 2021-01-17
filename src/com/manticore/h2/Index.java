@@ -23,6 +23,7 @@ import java.util.TreeMap;
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class Index {
+
   String tableCatalog;
   String tableSchema;
   String tableName;
@@ -30,7 +31,7 @@ public class Index {
   String indexQualifier;
   String indexName;
   Short type;
-  
+
   TreeMap<Short, IndexColumn> columns = new TreeMap<>();
 
   public Index(String tableCatalog, String tableSchema, String tableName, Boolean nonUnique, String indexQualifier,
@@ -43,12 +44,11 @@ public class Index {
     this.indexName = indexName;
     this.type = type;
   }
-	
-	public IndexColumn put(Short ordinalPosition, String columnName, String ascOrDesc, Long cardinality,
-										 Long pages, String filterCondition) {
-		IndexColumn column= new IndexColumn(ordinalPosition, columnName, ascOrDesc, cardinality, pages, filterCondition);
-		return columns.put(ordinalPosition, column);
-	}
-  
-  
+
+  public IndexColumn put(Short ordinalPosition, String columnName, String ascOrDesc, Long cardinality,
+                         Long pages, String filterCondition) {
+    IndexColumn column = new IndexColumn(ordinalPosition, columnName, ascOrDesc, cardinality, pages, filterCondition);
+    return columns.put(ordinalPosition, column);
+  }
+
 }

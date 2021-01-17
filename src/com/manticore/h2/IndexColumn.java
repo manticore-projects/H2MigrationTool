@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package com.manticore.h2;
 
 /**
@@ -22,25 +21,26 @@ package com.manticore.h2;
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class IndexColumn implements Comparable<IndexColumn> {
-	Short ordinalPosition;
-	String columnName;
-	String ascOrDesc;
-	Long cardinality;
-	Long pages;
-	String filterCondition;
 
-	public IndexColumn(Short ordinalPosition, String columnName, String ascOrDesc, Long cardinality,
-										 Long pages, String filterCondition) {
-		this.ordinalPosition = ordinalPosition;
-		this.columnName = columnName;
-		this.ascOrDesc = ascOrDesc;
-		this.cardinality = cardinality;
-		this.pages = pages;
-		this.filterCondition = filterCondition;
-	}
+  Short ordinalPosition;
+  String columnName;
+  String ascOrDesc;
+  Long cardinality;
+  Long pages;
+  String filterCondition;
 
-	@Override
-	public int compareTo(IndexColumn o) {
-		return ordinalPosition.compareTo(o.ordinalPosition);
-	}
+  public IndexColumn(Short ordinalPosition, String columnName, String ascOrDesc, Long cardinality,
+                     Long pages, String filterCondition) {
+    this.ordinalPosition = ordinalPosition;
+    this.columnName = columnName;
+    this.ascOrDesc = ascOrDesc;
+    this.cardinality = cardinality;
+    this.pages = pages;
+    this.filterCondition = filterCondition;
+  }
+
+  @Override
+  public int compareTo(IndexColumn o) {
+    return ordinalPosition.compareTo(o.ordinalPosition);
+  }
 }

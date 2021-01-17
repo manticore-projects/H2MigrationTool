@@ -45,8 +45,8 @@ public class ReferencesWithoutPrimaryKey {
       Driver driver = H2MigrationTool.loadDriver("/home/are/Downloads", "1.4.199");
 
       prepare(driver, "SA", null);
-			
-			getDDLStatements(dbFileUriStr, "SA", null);
+
+      getDDLStatements(dbFileUriStr, "SA", null);
 
     } catch (Exception ex) {
       LOGGER.log(Level.SEVERE, null, ex);
@@ -102,20 +102,19 @@ public class ReferencesWithoutPrimaryKey {
 
   public static List<String> getDDLStatements(String dbFileUriStr, String user, String password) throws Exception {
     ArrayList<String> ddlStatements = new ArrayList<>();
-    
+
     Properties properties = new Properties();
     properties.setProperty("user", "sa");
     properties.setProperty("password", "");
-    
+
     Driver driver = H2MigrationTool.loadDriver("/home/are/Downloads", "1.4.199");
     Connection con = null;
 
     try {
       con = driver.connect("jdbc:h2:" + dbFileUriStr, properties);
-      
-      MetaData metaData = new MetaData(con);
-			metaData.build();
 
+      MetaData metaData = new MetaData(con);
+      metaData.build();
 
       Statement st = null;
       try {

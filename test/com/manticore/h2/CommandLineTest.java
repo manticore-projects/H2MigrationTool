@@ -14,7 +14,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package com.manticore.h2;
 
 import java.io.File;
@@ -31,25 +30,28 @@ import org.junit.*;
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class CommandLineTest {
+
   public static final Logger LOGGER = Logger.getLogger(H2MigrationTool.class.getName());
 
-  /*@todo: move DDLs and Test SQLs into a text file to read from*/
+  /*
+   * @todo: move DDLs and Test SQLs into a text file to read from
+   */
   public static final String DDL_STR =
-      "drop table IF EXISTS B cascade;\n"
-          + "drop table IF EXISTS A cascade;\n"
-          + "\n"
-          + "CREATE TABLE a\n"
-          + "  (\n"
-          + "     field1 varchar(1)\n"
-          + "  );\n"
-          + "\n"
-          + "CREATE TABLE b\n"
-          + "  (\n"
-          + "     field2 varchar(1)\n"
-          + "  );\n"
-          + "\n"
-          + "ALTER TABLE b\n"
-          + "  ADD FOREIGN KEY (field2) REFERENCES a(field1);";
+                             "drop table IF EXISTS B cascade;\n" +
+                             "drop table IF EXISTS A cascade;\n" +
+                             "\n" +
+                             "CREATE TABLE a\n" +
+                             "  (\n" +
+                             "     field1 varchar(1)\n" +
+                             "  );\n" +
+                             "\n" +
+                             "CREATE TABLE b\n" +
+                             "  (\n" +
+                             "     field2 varchar(1)\n" +
+                             "  );\n" +
+                             "\n" +
+                             "ALTER TABLE b\n" +
+                             "  ADD FOREIGN KEY (field2) REFERENCES a(field1);";
 
   @Test
   public void migrateAutoCommandLine() throws Exception {
@@ -65,30 +67,32 @@ public class CommandLineTest {
     String dbFileUriStr = H2MigrationTool.getAbsoluteFileName(databaseName);
 
     File h2File = new File(dbFileUriStr + ".mv.db");
-    if (h2File.exists()) {
+    if (h2File.exists())
       Assert.fail(
-          "The H2 Database file "
-              + h2File.getCanonicalPath()
-              + "  exists already. Please remove it manually.");
-    }
+              "The H2 Database file " +
+              h2File.getCanonicalPath() +
+              "  exists already. Please remove it manually.");
 
     Properties properties = new Properties();
     properties.setProperty("user", username);
     properties.setProperty("password", password);
 
     Driver driver =
-        H2MigrationTool.loadDriver(
-            (versionFrom != null && versionFrom.length() > 0) ? versionFrom : "1.4.200");
+           H2MigrationTool.loadDriver(
+                   (versionFrom != null && versionFrom.length() > 0)
+                   ? versionFrom
+                   : "1.4.200");
     try (Connection con = driver.connect("jdbc:h2:" + dbFileUriStr, properties);
-        Statement st = con.createStatement()) {
+            Statement st = con.createStatement()) {
 
-      for (String sqlStr : DDL_STR.split(";")) st.executeUpdate(sqlStr);
+      for (String sqlStr : DDL_STR.split(";"))
+        st.executeUpdate(sqlStr);
 
     } catch (Exception ex) {
       LOGGER.log(
-          Level.SEVERE,
-          "Error when create the database " + dbFileUriStr + "  version " + versionFrom,
-          ex);
+              Level.SEVERE,
+              "Error when create the database " + dbFileUriStr + "  version " + versionFrom,
+              ex);
       Assert.fail();
     }
 
@@ -118,7 +122,7 @@ public class CommandLineTest {
       args.add("-o");
       args.add(options);
     }
-		
+
     args.add("--force");
 
     // Example:
@@ -136,7 +140,7 @@ public class CommandLineTest {
       }
     }
   }
-	
+
   @Test
   public void migrateExistingDB() throws Exception {
 
@@ -174,7 +178,7 @@ public class CommandLineTest {
       args.add("-o");
       args.add(options);
     }
-		
+
     args.add("--force");
 
     // Example:
@@ -184,7 +188,7 @@ public class CommandLineTest {
     } catch (Exception ex) {
       Assert.fail(ex.getMessage());
     } finally {
-     
+
     }
   }
 }

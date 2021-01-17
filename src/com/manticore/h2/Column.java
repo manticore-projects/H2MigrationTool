@@ -21,6 +21,7 @@ package com.manticore.h2;
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class Column implements Comparable<Column> {
+
   String tableCatalog;
   String tableSchema;
   String tableName;
@@ -44,27 +45,27 @@ public class Column implements Comparable<Column> {
   String isGeneratedColumn;
 
   public Column(
-      String tableCatalog,
-      String tableSchema,
-      String tableName,
-      String columnName,
-      Integer dataType,
-      String typeName,
-      Integer columnSize,
-      Integer decimalDigits,
-      Integer numericPrecisionRadix,
-      Integer nullable,
-      String remarks,
-      String columnDefinition,
-      Integer characterOctetLength,
-      Integer ordinalPosition,
-      String isNullable,
-      String scopeCatalog,
-      String scopeSchema,
-      String scopeTable,
-      Short sourceDataType,
-      String isAutomaticIncrement,
-      String isGeneratedColumn) {
+          String tableCatalog,
+          String tableSchema,
+          String tableName,
+          String columnName,
+          Integer dataType,
+          String typeName,
+          Integer columnSize,
+          Integer decimalDigits,
+          Integer numericPrecisionRadix,
+          Integer nullable,
+          String remarks,
+          String columnDefinition,
+          Integer characterOctetLength,
+          Integer ordinalPosition,
+          String isNullable,
+          String scopeCatalog,
+          String scopeSchema,
+          String scopeTable,
+          Short sourceDataType,
+          String isAutomaticIncrement,
+          String isGeneratedColumn) {
     this.tableCatalog = tableCatalog;
     this.tableSchema = tableSchema;
     this.tableName = tableName;
@@ -92,23 +93,32 @@ public class Column implements Comparable<Column> {
   public int compareTo(Column o) {
     int compareTo =
         tableCatalog == null && o.tableCatalog == null
-            ? 0
-            : tableCatalog != null
-                ? tableCatalog.compareToIgnoreCase(o.tableCatalog)
-                : -o.tableCatalog.compareToIgnoreCase(tableCatalog);
+                ? 0
+                : tableCatalog != null
+                        ? tableCatalog.compareToIgnoreCase(o.tableCatalog)
+                        : -o.tableCatalog.compareToIgnoreCase(tableCatalog);
 
     if (compareTo == 0)
       compareTo =
-          tableSchema == null && o.tableSchema == null
+      tableSchema == null && o.tableSchema == null
               ? 0
               : tableSchema != null
-                  ? tableSchema.compareToIgnoreCase(o.tableSchema)
-                  : -o.tableSchema.compareToIgnoreCase(tableSchema);
+                      ? tableSchema.compareToIgnoreCase(o.tableSchema)
+                      : -o.tableSchema.compareToIgnoreCase(tableSchema);
 
-    if (compareTo == 0) compareTo = tableName.compareToIgnoreCase(o.tableName);
+    if (compareTo == 0)
+      compareTo = tableName.compareToIgnoreCase(o.tableName);
 
-    if (compareTo == 0) compareTo = ordinalPosition.compareTo(o.ordinalPosition);
+    if (compareTo == 0)
+      compareTo = ordinalPosition.compareTo(o.ordinalPosition);
 
     return compareTo;
   }
+
+  @Override
+  public String toString() {
+    return tableCatalog + "." + tableSchema + "." + tableName + "." + columnName + "\t" + typeName + " (" + columnSize + ", " + decimalDigits + ")";
+  }
+  
+  
 }
