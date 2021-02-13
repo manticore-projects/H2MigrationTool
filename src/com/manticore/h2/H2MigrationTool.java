@@ -245,8 +245,8 @@ public class H2MigrationTool {
 
     return tempPath;
   }
-
-  public static String getAbsoluteFileName(String filename) {
+  
+  public static File getAbsoluteFile(String filename) {
     String homePath = new File(System.getProperty("user.home")).toURI().getPath();
 
     filename = filename.replaceFirst("~", Matcher.quoteReplacement(homePath));
@@ -261,7 +261,11 @@ public class H2MigrationTool {
       Path absolutePath = resolvedPath.normalize();
       f = absolutePath.toFile();
     }
-    return f.getAbsolutePath();
+    return f;
+  }
+
+  public static String getAbsoluteFileName(String filename) {
+    return getAbsoluteFile(filename).getAbsolutePath();
   }
 
   public static Collection<Path> findFilesinPathRecursively(
@@ -279,7 +283,7 @@ public class H2MigrationTool {
                                 }
                                 return false;
                               })) {
-      paths.collect(Collectors.toCollection(() -> fileNames));
+      paths.sorted().collect(Collectors.toCollection(() -> fileNames));
     }
     return fileNames;
   }
@@ -301,7 +305,7 @@ public class H2MigrationTool {
                                 }
                                 return false;
                               })) {
-      paths.collect(Collectors.toCollection(() -> fileNames));
+      paths.sorted().collect(Collectors.toCollection(() -> fileNames));
     }
     return fileNames;
   }
@@ -565,7 +569,7 @@ public class H2MigrationTool {
     return driverRecord;
   }
 
-  private class ScriptResult {
+  public class ScriptResult {
 
     String scriptFileName;
     List<String> commands;
@@ -714,7 +718,7 @@ public class H2MigrationTool {
     return new ScriptResult(scriptFileName, commands);
   }
 
-  public void migrate(
+  public ScriptResult migrate(
           String versionFrom,
           String versionTo,
           String databaseFileName,
@@ -726,6 +730,8 @@ public class H2MigrationTool {
           boolean overwrite,
           boolean force)
           throws Exception {
+		
+	ScriptResult scriptResult =null;	
 
     if (databaseFileName.toLowerCase().endsWith(".mv.db")) {
       databaseFileName =
@@ -755,7 +761,7 @@ public class H2MigrationTool {
     boolean success = false;
     try {
 
-      ScriptResult scriptResult =
+      scriptResult =
                    writeScript(
                            driverRecordFrom, databaseFileName, user, password, scriptFileName, compression);
 
@@ -766,8 +772,7 @@ public class H2MigrationTool {
       LOGGER.info(
               "Wrote " + driverRecordFrom.toString() + " database to script: " + scriptFileName);
     } catch (Exception ex) {
-      LOGGER.log(
-              Level.SEVERE,
+       throw new Exception(
               "Failed to write " + driverRecordFrom.toString() + " database to script",
               ex);
     }
@@ -778,7 +783,7 @@ public class H2MigrationTool {
            : upgradeOptions;
     if (success)
       try {
-      ScriptResult scriptResult =
+         scriptResult =
                    createFromScript(
                            driverRecordTo,
                            databaseFileName,
@@ -798,6 +803,7 @@ public class H2MigrationTool {
               "Failed to created new " + driverRecordTo.toString() + " database: " + databaseFileName,
               ex);
     }
+	return scriptResult;	
   }
 
   public void migrateAuto(String databaseFileName) throws Exception {
