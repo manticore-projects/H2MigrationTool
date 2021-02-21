@@ -21,7 +21,6 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.*;
@@ -38,7 +37,6 @@ import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.IOUtils;
 
 /**
  * @author Andreas Reichel <andreas@manticore-projects.com>
@@ -46,6 +44,8 @@ import org.apache.commons.io.IOUtils;
 public class H2MigrationTool {
 
   public static final Logger LOGGER = Logger.getLogger(H2MigrationTool.class.getName());
+  public static final Pattern VERSION_PATTERN =
+                Pattern.compile("([0-9]+)\\.([0-9]+)\\.([0-9]+)(\\-([a-z0-9]{9}))?", Pattern.CASE_INSENSITIVE);
 
   protected static final TreeSet<DriverRecord> driverRecords = new TreeSet<>();
 
@@ -367,12 +367,11 @@ public class H2MigrationTool {
                        new URLClassLoader(new URL[]{url}, H2MigrationTool.class.getClassLoader());
 
         Class classToLoad = Class.forName("org.h2.Driver", true, loader);
-
+				
         Method method = classToLoad.getDeclaredMethod("load");
         Object instance = classToLoad.newInstance();
-        Object result = method.invoke(instance);
-
-        Driver driver = getDriverFromInstance(loader, instance);
+        Driver driver = (java.sql.Driver) method.invoke(instance);
+	   getDriverFromInstance(loader, instance);
 
         Properties properties = new Properties();
         properties.setProperty("user", "sa");
@@ -381,17 +380,16 @@ public class H2MigrationTool {
         Connection connection = driver.connect("jdbc:h2:mem:test", properties);
         DatabaseMetaData metaData = connection.getMetaData();
 
-        String driverVersion = metaData.getDriverVersion();
+        //String driverVersion = metaData.getDriverVersion();
 
-        Pattern pattern =
-                Pattern.compile("([0-9]+)\\.([0-9]+)\\.([0-9]+)", Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(driverVersion);
+        Matcher matcher = VERSION_PATTERN.matcher(path.getFileName().toString());
         if (matcher.find()) {
           int majorVersion = Integer.valueOf(matcher.group(1));
           int minorVersion = Integer.valueOf(matcher.group(2));
-          int buildId = Integer.valueOf(matcher.group(3));
+          int patchId = Integer.valueOf(matcher.group(3));
+	     String buildId = matcher.groupCount() == 5 ? matcher.group(5) : "";
 
-          DriverRecord driverRecord = new DriverRecord(majorVersion, minorVersion, buildId, url);
+          DriverRecord driverRecord = new DriverRecord(majorVersion, minorVersion, patchId, buildId, url);
           driverRecords.add(driverRecord);
 
           LOGGER.info(driverRecord.toString());
@@ -411,6 +409,7 @@ public class H2MigrationTool {
 
     return driverRecords;
   }
+  
 
   private static Driver getDriverFromInstance(ClassLoader loader, Object instance) {
     Driver driver = (Driver) instance;
@@ -464,9 +463,8 @@ public class H2MigrationTool {
 
       Method method = classToLoad.getDeclaredMethod("load");
       Object instance = classToLoad.newInstance();
-      Object result = method.invoke(instance);
-
-      driver = getDriverFromInstance(loader, instance);
+      driver = (java.sql.Driver) method.invoke(instance);
+	 getDriverFromInstance(loader, instance);
 
       return driver;
     } finally {
@@ -479,18 +477,22 @@ public class H2MigrationTool {
   }
 
   public static DriverRecord getDriverRecord(
-          TreeSet<DriverRecord> driverRecords, int majorVersion, int minorVersion, int buildId) {
+          TreeSet<DriverRecord> driverRecords, int majorVersion, int minorVersion, int patchId, String buildID) {
+    
     for (DriverRecord r : driverRecords.descendingSet())
-      if (r.majorVersion == majorVersion && r.minorVersion == minorVersion && r.buildId == buildId)
+      if (buildID==null || buildID.isEmpty()) {
+        if (r.majorVersion == majorVersion && r.minorVersion == minorVersion && r.patchId == patchId && (r.buildId== null || r.buildId.isEmpty()) )
+          return r;
+      } else if (r.majorVersion == majorVersion
+          && r.minorVersion == minorVersion
+          && r.patchId == patchId
+          && r.buildId.equalsIgnoreCase(buildID)) 
         return r;
     return null;
   }
 
-  private DriverRecord getDriverRecord(int majorVersion, int minorVersion, int buildId) {
-    for (DriverRecord r : driverRecords.descendingSet())
-      if (r.majorVersion == majorVersion && r.minorVersion == minorVersion && r.buildId == buildId)
-        return r;
-    return null;
+  private DriverRecord getDriverRecord(int majorVersion, int minorVersion, int patchId, String buildID) {
+    return getDriverRecord(H2MigrationTool.driverRecords, majorVersion, minorVersion, patchId, buildID);
   }
 
   public static DriverRecord getDriverRecord(
@@ -512,8 +514,7 @@ public class H2MigrationTool {
           throws Exception {
     DriverRecord driverRecord = null;
 
-    Pattern pattern = Pattern.compile("([0-9]+)\\.([0-9]+)\\.([0-9]+)", Pattern.CASE_INSENSITIVE);
-    Matcher matcher = pattern.matcher(version);
+    Matcher matcher = VERSION_PATTERN.matcher(version);
     if (matcher.find())
       if (matcher.groupCount() == 2) {
         int majorVersion = Integer.valueOf(matcher.group(1));
@@ -523,9 +524,16 @@ public class H2MigrationTool {
       } else if (matcher.groupCount() == 3) {
         int majorVersion = Integer.valueOf(matcher.group(1));
         int minorVersion = Integer.valueOf(matcher.group(2));
-        int buildId = Integer.valueOf(matcher.group(3));
+        int patchId = Integer.valueOf(matcher.group(3));
 
-        driverRecord = getDriverRecord(driverRecords, majorVersion, minorVersion, buildId);
+        driverRecord = getDriverRecord(driverRecords, majorVersion, minorVersion, patchId, "");
+      } else if (matcher.groupCount() == 5) {
+        int majorVersion = Integer.valueOf(matcher.group(1));
+          int minorVersion = Integer.valueOf(matcher.group(2));
+          int patchId = Integer.valueOf(matcher.group(3));
+	     String buildId = matcher.group(5);
+
+        driverRecord = getDriverRecord(driverRecords, majorVersion, minorVersion, patchId, buildId);
       } else
         throw new Exception(
                 "The provided version " + version + " does not match the required format ###.###.###");
@@ -540,33 +548,7 @@ public class H2MigrationTool {
   }
 
   private DriverRecord getDriverRecord(String version) throws Exception {
-    DriverRecord driverRecord = null;
-
-    Pattern pattern = Pattern.compile("([0-9]+)\\.([0-9]+)\\.([0-9]+)", Pattern.CASE_INSENSITIVE);
-    Matcher matcher = pattern.matcher(version);
-    if (matcher.find())
-      if (matcher.groupCount() == 2) {
-        int majorVersion = Integer.valueOf(matcher.group(1));
-        int minorVersion = Integer.valueOf(matcher.group(2));
-
-        driverRecord = getDriverRecord(majorVersion, minorVersion);
-      } else if (matcher.groupCount() == 3) {
-        int majorVersion = Integer.valueOf(matcher.group(1));
-        int minorVersion = Integer.valueOf(matcher.group(2));
-        int buildId = Integer.valueOf(matcher.group(3));
-
-        driverRecord = getDriverRecord(majorVersion, minorVersion, buildId);
-      } else
-        throw new Exception(
-                "The provided version " + version + " does not match the required format ###.###.###");
-    else
-      throw new Exception(
-              "The provided version " + version + " does not match the required format ###.###.###");
-
-    if (driverRecord == null)
-      throw new Exception("No H2 driver found for requestion version " + version);
-
-    return driverRecord;
+    return getDriverRecord(H2MigrationTool.driverRecords, version);
   }
 
   public class ScriptResult {
@@ -601,9 +583,8 @@ public class H2MigrationTool {
 
     Method method = classToLoad.getDeclaredMethod("load");
     Object instance = classToLoad.newInstance();
-    Object result = method.invoke(instance);
-
-    Driver driver = getDriverFromInstance(loader, instance);
+    Driver driver = (java.sql.Driver) method.invoke(instance);
+    getDriverFromInstance(loader, instance);
 
     Connection connection = null;
 
@@ -627,7 +608,7 @@ public class H2MigrationTool {
       instance = classToLoad.newInstance();
 
       // Connection conn, String fileName, String options1, String options2
-      result = method.invoke(instance, connection, scriptFileName, "", options);
+      Object result = method.invoke(instance, connection, scriptFileName, "", options);
       return new ScriptResult(scriptFileName, commands);
 
     } finally {
@@ -656,7 +637,7 @@ public class H2MigrationTool {
           IllegalAccessException, IllegalArgumentException, InvocationTargetException, SQLException,
           Exception {
 
-    databaseFileName = databaseFileName + "." + driverRecord.buildId;
+    databaseFileName = databaseFileName + "." + driverRecord.patchId + (!driverRecord.buildId.isEmpty() ? ("-" + driverRecord.buildId) : "");
 
     Properties properties = new Properties();
     properties.setProperty("user", user);
@@ -669,9 +650,8 @@ public class H2MigrationTool {
 
     Method method = classToLoad.getDeclaredMethod("load");
     Object instance = classToLoad.newInstance();
-    Object result = method.invoke(instance);
-
-    Driver driver = getDriverFromInstance(loader, instance);
+    Driver driver = (java.sql.Driver) method.invoke(instance);
+    getDriverFromInstance(loader, instance);
 
     File dbFile = new File(databaseFileName + ".mv.db");
     if (dbFile.exists())

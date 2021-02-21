@@ -16,23 +16,50 @@
  */
 package com.manticore.h2;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.commons.io.IOUtils;
 
-/**
- *
- * @author Andreas Reichel <andreas@manticore-projects.com>
- */
+/** @author Andreas Reichel <andreas@manticore-projects.com> */
 public class DriverRecord implements Comparable<DriverRecord> {
+  public static final Logger LOGGER = Logger.getLogger(DriverRecord.class.getName());
 
   int majorVersion;
   int minorVersion;
-  int buildId;
+  int patchId;
+  String buildId;
   URL url;
 
-  public DriverRecord(int majorVersion, int minorVersion, int buildId, URL url) {
+  // 	git rev-list --topo-order -100 HEAD --pretty=reference --abbrev-commit --reverse | sed -n '1p;0~2p' > ~/data/src/H2MigrationTool/src/com/manticore/h2/h2-git.log
+  public static final ArrayList<String> buildIDs = new ArrayList<>();
+
+  public DriverRecord(int majorVersion, int minorVersion, int patchID, String buildId, URL url) {
+
+    if (buildId != null && !buildId.isEmpty())
+      synchronized (buildIDs) {
+        if (buildIDs.isEmpty()) {
+          try (InputStream in =
+              ClassLoader.getSystemResourceAsStream("com/manticore/h2/h2-git.log")) {
+            for (String line : IOUtils.readLines(in, Charset.defaultCharset())) {
+              String id = line.split(" ", 2)[0];
+              buildIDs.add(id);
+            }
+          } catch (IOException ex) {
+            LOGGER.log(Level.SEVERE, null, ex);
+          }
+        }
+      }
+
     this.majorVersion = majorVersion;
     this.minorVersion = minorVersion;
-    this.buildId = buildId;
+    this.patchId = patchID;		
+    this.buildId = buildId == null || buildId.isBlank() ? "" : buildId;
     this.url = url;
   }
 
@@ -40,48 +67,57 @@ public class DriverRecord implements Comparable<DriverRecord> {
   public int compareTo(DriverRecord t) {
     int compareTo = Integer.compare(majorVersion, t.majorVersion);
 
-    if (compareTo == 0)
-      compareTo = Integer.compare(minorVersion, t.minorVersion);
+    if (compareTo == 0) compareTo = Integer.compare(minorVersion, t.minorVersion);
 
-    if (compareTo == 0)
-      compareTo = Integer.compare(buildId, t.buildId);
+    if (compareTo == 0) compareTo = Integer.compare(patchId, t.patchId);
+
+    if (compareTo == 0) {
+      if (buildId.isEmpty() && !t.buildId.isEmpty()) compareTo = -1;
+      else if (!buildId.isEmpty() && t.buildId.isEmpty()) compareTo = 1;
+      else if (!buildId.isEmpty() && !t.buildId.isEmpty()) {
+        int i1 = buildIDs.indexOf(buildId);
+        int i2 = buildIDs.indexOf(t.buildId);
+        compareTo = Integer.compare(i1, i2);
+      }
+    }
 
     return compareTo;
   }
 
   @Override
   public int hashCode() {
-    int hash = 3;
-    hash = 29 * hash + this.majorVersion;
-    hash = 29 * hash + this.minorVersion;
-    hash = 29 * hash + this.buildId;
+    int hash = 7;
+    hash = 41 * hash + this.majorVersion;
+    hash = 41 * hash + this.minorVersion;
+    hash = 41 * hash + this.patchId;
+    hash = 41 * hash + Objects.hashCode(this.buildId);
     return hash;
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
     final DriverRecord other = (DriverRecord) obj;
-    if (this.majorVersion != other.majorVersion)
-      return false;
-    if (this.minorVersion != other.minorVersion)
-      return false;
-    if (this.buildId != other.buildId)
-      return false;
+    if (this.majorVersion != other.majorVersion) return false;
+    if (this.minorVersion != other.minorVersion) return false;
+    if (this.patchId != other.patchId) return false;
+    if (!Objects.equals(this.buildId, other.buildId)) return false;
     return true;
   }
 
   public String getVersion() {
-    return majorVersion + "." + minorVersion + "." + buildId;
+    return majorVersion
+        + "."
+        + minorVersion
+        + "."
+        + patchId
+        + (!buildId.isEmpty() ? ("-" + buildId) : "");
   }
 
   @Override
   public String toString() {
-    return "H2-" + majorVersion + "." + minorVersion + "." + buildId;
+    return "H2-" + getVersion();
   }
 }

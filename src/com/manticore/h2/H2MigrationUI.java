@@ -258,25 +258,30 @@ public class H2MigrationUI extends JFrame {
           if (JFileChooser.APPROVE_OPTION == result) {
             File[] selectedFiles = fileChooser.getSelectedFiles();
             if (selectedFiles.length == 0) {
-              File selectedFolder = fileChooser.getSelectedFile();
+              File selectedFile = fileChooser.getSelectedFile();
 
-              try {
-                SwingWorker<Collection<Path>, Path> worker =
-                    new SwingWorker<Collection<Path>, Path>() {
-                      @Override
-                      protected Collection<Path> doInBackground() throws Exception {
-                        return H2MigrationTool.findH2Databases(selectedFolder.getAbsolutePath());
-                      }
-                    };
+              if (selectedFile.isDirectory()) {
+                try {
+                  SwingWorker<Collection<Path>, Path> worker =
+                      new SwingWorker<Collection<Path>, Path>() {
+                        @Override
+                        protected Collection<Path> doInBackground() throws Exception {
+                          return H2MigrationTool.findH2Databases(selectedFile.getAbsolutePath());
+                        }
+                      };
 
-                executeAndWait(worker, H2MigrationUI.this);
+                  executeAndWait(worker, H2MigrationUI.this);
 
-                Collection<Path> h2DatabasePaths = worker.get();
-                for (Path p : h2DatabasePaths) databaseFileModel.addElement(p.toFile());
-              } catch (InterruptedException ex) {
-                Logger.getLogger(H2MigrationUI.class.getName()).log(Level.SEVERE, null, ex);
-              } catch (ExecutionException ex) {
-                Logger.getLogger(H2MigrationUI.class.getName()).log(Level.SEVERE, null, ex);
+                  Collection<Path> h2DatabasePaths = worker.get();
+                  for (Path p : h2DatabasePaths) databaseFileModel.addElement(p.toFile());
+                } catch (InterruptedException ex) {
+                  Logger.getLogger(H2MigrationUI.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (ExecutionException ex) {
+                  Logger.getLogger(H2MigrationUI.class.getName()).log(Level.SEVERE, null, ex);
+                }
+              } else {
+                LOGGER.info(selectedFile.getAbsolutePath());
+                databaseFileModel.addElement(selectedFile);
               }
 
             } else
