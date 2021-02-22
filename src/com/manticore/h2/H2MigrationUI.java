@@ -300,6 +300,83 @@ public class H2MigrationUI extends JFrame {
         }
       };
 
+  private final Action addDatabaseDriversAction =
+      new AbstractAction("Add H2 Drivers", LIST_ADD_ICON) {
+        @Override
+        public void actionPerformed(ActionEvent ae) {
+          ArrayList<Exception> exceptions = new ArrayList<>();
+
+          JFileChooser fileChooser = new JFileChooser();
+          fileChooser.setDialogTitle("Select the H2 Database Files and Directories");
+          fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+          fileChooser.setFileHidingEnabled(false);
+          fileChooser.setDialogType(JFileChooser.OPEN_DIALOG);
+          fileChooser.setSelectedFile(
+              H2MigrationTool.getAbsoluteFile("~/.m2/repository/com/h2database/h2"));
+
+          int result = fileChooser.showOpenDialog(H2MigrationUI.this);
+
+          if (JFileChooser.APPROVE_OPTION == result) {
+            File[] selectedFiles = fileChooser.getSelectedFiles();
+            if (selectedFiles.length == 0) {
+              File selectedFile = fileChooser.getSelectedFile();
+
+              if (selectedFile.isDirectory()) {
+                try {
+                  SwingWorker<Collection<Path>, Path> worker =
+                      new SwingWorker<Collection<Path>, Path>() {
+                        @Override
+                        protected Collection<Path> doInBackground() throws Exception {
+                          return H2MigrationTool.findH2Drivers(selectedFile.getAbsolutePath());
+                        }
+                      };
+
+                  executeAndWait(worker, H2MigrationUI.this);
+
+                  Collection<Path> h2DriverPaths = worker.get();
+                  for (Path p : h2DriverPaths) {
+                    try {
+                      H2MigrationTool.readDriverRecord(p);
+                    } catch (Exception ex) {
+                      exceptions.add(ex);
+                    }
+                  }
+
+                } catch (Exception ex) {
+                  LOGGER.log(Level.SEVERE, null, ex);
+                }
+              } else {
+                LOGGER.info(selectedFile.getAbsolutePath());
+                try {
+                  H2MigrationTool.readDriverRecord(selectedFile.toPath());
+                } catch (Exception ex) {
+                  exceptions.add(ex);
+                }
+              }
+
+            } else
+              for (File f : selectedFiles) {
+                LOGGER.info(f.getAbsolutePath());
+                try {
+                  H2MigrationTool.readDriverRecord(f.toPath());
+                } catch (Exception ex) {
+                  exceptions.add(ex);
+                }
+              }
+
+            if (!exceptions.isEmpty()) {
+              Exception ex = new Exception("Could not read all Driver files.");
+              for (Exception ex1 : exceptions) ex.addSuppressed(ex1);
+
+              LOGGER.log(Level.WARNING, "Failed to read some files.", ex);
+            }
+          }
+
+          listModel.clear();
+          listModel.addAll(H2MigrationTool.driverRecords);
+        }
+      };
+
   private final Action helpAction =
       new AbstractAction("Help") {
         @Override
@@ -685,6 +762,11 @@ public class H2MigrationUI extends JFrame {
     versionListLabel.setHorizontalAlignment(JLabel.TRAILING);
     centerNorthPanel.add(versionListLabel, constraints);
 
+    JToolBar databaseDriverActionsBar = new JToolBar("Database Driver Actions", JToolBar.VERTICAL);
+    databaseDriverActionsBar.setBorderPainted(false);
+    databaseDriverActionsBar.setFloatable(false);
+    databaseDriverActionsBar.add(addDatabaseDriversAction).setHideActionText(true);
+
     JScrollPane fromVersionListScrollPane = new JScrollPane(fromVersionList);
 
     JLabel fromVersionPaneLabel = new JLabel("From H2 Version");
@@ -714,6 +796,15 @@ public class H2MigrationUI extends JFrame {
     constraints.gridwidth = 3;
     constraints.fill = GridBagConstraints.BOTH;
     centerNorthPanel.add(centerCenterPanel, constraints);
+
+    constraints.gridx += 3;
+    constraints.weightx = 1.0;
+    constraints.gridwidth = 1;
+    constraints.fill = GridBagConstraints.NONE;
+    constraints.insets.left = 0;
+    constraints.anchor = GridBagConstraints.FIRST_LINE_START;
+
+    centerNorthPanel.add(databaseDriverActionsBar, constraints);
 
     add(centerNorthPanel, BorderLayout.CENTER);
 

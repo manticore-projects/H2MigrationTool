@@ -309,6 +309,16 @@ public class H2MigrationTool {
     }
     return fileNames;
   }
+  
+  public static Collection<Path> findH2Drivers(String pathName) throws IOException {
+    ArrayList<Path> fileNames = new ArrayList<>();
+
+    File folder = new File(pathName);
+    if (folder.exists() && folder.canRead() && folder.isDirectory())
+      fileNames.addAll(
+              findFilesinPathRecursively(Path.of(folder.toURI()), Integer.MAX_VALUE, "h2", ".jar"));
+    return fileNames;
+  }
 
   public static Collection<Path> findH2Databases(String pathName) throws IOException {
     ArrayList<Path> fileNames = new ArrayList<>();
@@ -407,6 +417,48 @@ public class H2MigrationTool {
     if (fileSystem != null)
       fileSystem.close();
 
+    return driverRecords;
+  }
+  
+  public static TreeSet<DriverRecord> readDriverRecord(Path path) throws Exception {
+      try {
+        URL url = path.toUri().toURL();
+
+        LOGGER.fine("Load JAR file from: " + url.toExternalForm());
+        URLClassLoader loader =
+                       new URLClassLoader(new URL[]{url}, H2MigrationTool.class.getClassLoader());
+
+        Class classToLoad = Class.forName("org.h2.Driver", true, loader);
+				
+        Method method = classToLoad.getDeclaredMethod("load");
+        Object instance = classToLoad.newInstance();
+        Driver driver = (java.sql.Driver) method.invoke(instance);
+	   getDriverFromInstance(loader, instance);
+
+        Properties properties = new Properties();
+        properties.setProperty("user", "sa");
+        properties.setProperty("password", "");
+
+        Connection connection = driver.connect("jdbc:h2:mem:test", properties);
+
+        Matcher matcher = VERSION_PATTERN.matcher(path.getFileName().toString());
+        if (matcher.find()) {
+          int majorVersion = Integer.valueOf(matcher.group(1));
+          int minorVersion = Integer.valueOf(matcher.group(2));
+          int patchId = Integer.valueOf(matcher.group(3));
+	     String buildId = matcher.groupCount() == 5 ? matcher.group(5) : "";
+
+          DriverRecord driverRecord = new DriverRecord(majorVersion, minorVersion, patchId, buildId, url);
+          driverRecords.add(driverRecord);
+
+          LOGGER.info(driverRecord.toString());
+        }
+
+        connection.close();
+        loader.close();
+      } catch (Exception ex) {
+        LOGGER.log(Level.SEVERE, "Failed to load the driver " + path.toString(), ex);
+      }
     return driverRecords;
   }
   
