@@ -36,7 +36,7 @@ public class DriverRecord implements Comparable<DriverRecord> {
   String buildId;
   URL url;
 
-  // 	git rev-list --topo-order -100 HEAD --pretty=reference --abbrev-commit --reverse | sed -n '1p;0~2p' > ~/data/src/H2MigrationTool/src/com/manticore/h2/h2-git.log
+  // 	git rev-list --topo-order -10000 HEAD --pretty=reference --abbrev-commit --reverse | sed -n '1p;0~2p' > ~/data/src/H2MigrationTool/src/com/manticore/h2/h2-git.log
   public static final ArrayList<String> buildIDs = new ArrayList<>();
 
   public DriverRecord(int majorVersion, int minorVersion, int patchID, String buildId, URL url) {
