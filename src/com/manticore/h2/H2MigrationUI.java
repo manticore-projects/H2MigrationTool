@@ -37,6 +37,8 @@ import java.sql.Connection;
 import java.util.*;
 import java.util.List;
 import java.util.Map.Entry;
+import javax.swing.filechooser.FileFilter;
+import org.apache.commons.io.filefilter.FileFileFilter;
 
 /** @author Andreas Reichel <andreas@manticore-projects.com> */
 public class H2MigrationUI extends JFrame {
@@ -222,6 +224,7 @@ public class H2MigrationUI extends JFrame {
 
   private final DefaultListModel<File> databaseFileModel = new DefaultListModel<>();
   private final JList<File> databaseFileList = new JList<>(databaseFileModel);
+  private final JTextField connectionParameterField = new JTextField(";MODE=Oracle;CACHE_SIZE=8192", 22);
   private final JTextField usernameField = new JTextField("SA", 8);
   private final JTextField passwordField = new JTextField("", 8);
 
@@ -239,6 +242,8 @@ public class H2MigrationUI extends JFrame {
   private final JCheckBox overwriteBox = new JCheckBox("Overwrite", false);
 
   private static final Font MONOSPACED_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 10);
+  
+  
 
   private final Action addDatabaseFileAction =
       new AbstractAction("Add Database File", LIST_ADD_ICON) {
@@ -247,6 +252,8 @@ public class H2MigrationUI extends JFrame {
           ArrayList<Exception> exceptions = new ArrayList<>();
 
           JFileChooser fileChooser = new JFileChooser();
+          fileChooser.addChoosableFileFilter(H2MigrationTool.H2_DATABASE_FILE_FILTER);
+          fileChooser.addChoosableFileFilter(H2MigrationTool.SQL_SCRIPT_FILE_FILTER);
           fileChooser.setDialogTitle("Select the H2 Database Files and Directories");
           fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
           fileChooser.setFileHidingEnabled(false);
@@ -430,6 +437,8 @@ public class H2MigrationUI extends JFrame {
 
                   @Override
                   protected List<File> doInBackground() throws Exception {
+                    String connectionParameters = connectionParameterField.getText();
+                    
                     Properties properties = new Properties();
                     properties.setProperty("user", usernameField.getText());
                     properties.setProperty("password", passwordField.getText());
@@ -467,8 +476,7 @@ public class H2MigrationUI extends JFrame {
                         boolean overwrite = overwriteBox.isSelected();
 
                         ScriptResult result =
-                            tool.migrate(
-                                versionFrom,
+                            tool.migrate(versionFrom,
                                 versionTo,
                                 f.getAbsolutePath(),
                                 username,
@@ -477,7 +485,8 @@ public class H2MigrationUI extends JFrame {
                                 compression,
                                 upgradeOptions,
                                 overwrite,
-                                overwrite);
+                                overwrite, 
+                                connectionParameters );
 
                         publish(new AbstractMap.SimpleEntry<>(f, result.scriptFileName));
 
@@ -704,6 +713,7 @@ public class H2MigrationUI extends JFrame {
     constraints.gridwidth = 1;
     constraints.fill = GridBagConstraints.HORIZONTAL;
     constraints.anchor = GridBagConstraints.BASELINE_LEADING;
+    constraints.weighty = 1;
     JLabel databaseFileLabel = new JLabel(getLabel("Database Files", 1));
     databaseFileLabel.setLabelFor(databaseFileList);
     databaseFileLabel.setHorizontalAlignment(JLabel.TRAILING);
@@ -712,6 +722,7 @@ public class H2MigrationUI extends JFrame {
     constraints.gridx++;
     constraints.weightx = 5.0;
     constraints.gridwidth = 3;
+    constraints.gridheight = 2;
     constraints.fill = GridBagConstraints.BOTH;
     centerNorthPanel.add(new JScrollPane(databaseFileList), constraints);
 
@@ -729,11 +740,39 @@ public class H2MigrationUI extends JFrame {
     databaseFileActionsBar.add(removeDatabaseFileAction).setHideActionText(true);
     databaseFileActionsBar.add(verifyDatabaseFileAction).setHideActionText(true);
     centerNorthPanel.add(databaseFileActionsBar, constraints);
+    
+    constraints.gridy++;
+    constraints.gridx = 0;
+    constraints.gridwidth = 1;
+    constraints.gridheight = 1;
+    constraints.fill = GridBagConstraints.HORIZONTAL;
+    constraints.anchor = GridBagConstraints.NORTHEAST;
+    constraints.weighty = 100;
+    databaseFileLabel.setHorizontalAlignment(JLabel.TRAILING);
+    centerNorthPanel.add(new JLabel(getLabel("SQL Script Files", 2)), constraints);
+    
+    // connectionParameterField
+    constraints.insets.left = 6;
+    constraints.gridx = 0;
+    constraints.gridy++;
+    constraints.weighty = 1;
+    constraints.fill = GridBagConstraints.HORIZONTAL;
+    constraints.anchor = GridBagConstraints.BASELINE_LEADING;
+    JLabel connectionParameterLabel = new JLabel(getLabel("Con. Param.", 2));
+    connectionParameterLabel.setLabelFor(connectionParameterField);
+    connectionParameterLabel.setHorizontalAlignment(JLabel.TRAILING);
+    centerNorthPanel.add(connectionParameterLabel, constraints);
+    
+    constraints.gridx++;
+    constraints.gridwidth=3;
+    centerNorthPanel.add(connectionParameterField, constraints);
+    
 
     constraints.insets.left = 6;
     constraints.gridx = 0;
     constraints.gridy++;
     constraints.weighty = 1;
+    constraints.gridwidth=1;
     constraints.fill = GridBagConstraints.HORIZONTAL;
     constraints.anchor = GridBagConstraints.BASELINE_LEADING;
     JLabel usernameLabel = new JLabel(getLabel("Username", 2));
@@ -869,8 +908,6 @@ public class H2MigrationUI extends JFrame {
     southPanel.add(southWestPanel);
 
     add(southPanel, BorderLayout.SOUTH);
-
-    setPreferredSize(new Dimension(480, 640));
 
     pack();
     setMinimumSize(getSize());
