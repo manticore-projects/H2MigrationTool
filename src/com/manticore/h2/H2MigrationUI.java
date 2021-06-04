@@ -400,6 +400,108 @@ public class H2MigrationUI extends JFrame {
           setVisible(false);
         }
       };
+  
+  private final Action recoverAction =
+      new AbstractAction("Recover") {
+        @Override
+        public void actionPerformed(ActionEvent ae) {
+          int[] selectedIndices = databaseFileList.getSelectedIndices();
+          int result = JOptionPane.NO_OPTION;
+
+          if (databaseFileList.getModel().getSize() > 0 && selectedIndices.length == 0)
+            result =
+                JOptionPane.showConfirmDialog(
+                    H2MigrationUI.this,
+                    "Recover ALL listed H2 Database Files?",
+                    "Recovery of the H2 Databases",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    DIALOG_QUESTION_64_ICON);
+          else if (selectedIndices.length > 0)
+            result =
+                JOptionPane.showConfirmDialog(
+                    H2MigrationUI.this,
+                    "Recover only the " + selectedIndices.length + " selected H2 Database Files?",
+                    "Recovery of the H2 Databases",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    DIALOG_QUESTION_64_ICON);
+
+          if (result == JOptionPane.YES_OPTION) {
+            ArrayList<String> messages = new ArrayList<>();
+            final JTextArea textArea = new JTextArea(24, 72);
+            textArea.setFont(MONOSPACED_FONT);
+
+            SwingWorker<List<File>, Entry<File, String>> worker =
+                new SwingWorker<List<File>, Entry<File, String>>() {
+
+                  @Override
+                  protected List<File> doInBackground() throws Exception {
+                    H2MigrationTool tool = new H2MigrationTool();
+                    H2MigrationTool.readDriverRecords();
+
+                    DriverRecord from = fromVersionList.getSelectedValue();
+
+                    ArrayList<File> databaseFiles = new ArrayList<>();
+                    ArrayList<File> failedDatabaseFiles = new ArrayList<>();
+
+                    if (selectedIndices.length > 0)
+                      for (int i : selectedIndices) databaseFiles.add(databaseFileModel.get(i));
+                    else databaseFiles.addAll(Collections.list(databaseFileModel.elements()));
+
+                    for (final File f : databaseFiles) {
+                      try {
+                        ScriptResult result =
+                            tool.writeRecoveryScript(from,
+                                f.getParent(),
+                                f.getName());
+
+                        publish(new AbstractMap.SimpleEntry<>(f, result.scriptFileName));
+
+                      } catch (Exception ex) {
+                        LOGGER.log(Level.WARNING, "Failed to recover " + f.getAbsolutePath(), ex);
+                        failedDatabaseFiles.add(f);
+                      }
+                    }
+                    return failedDatabaseFiles;
+                  }
+
+                  @Override
+                  protected void process(List<Entry<File, String>> entries) {
+                    for (Entry<File, String> e : entries) {
+                      textArea.append(e.getKey().getAbsolutePath() + " → " + e.getValue() + "\n");
+                    }
+                  }
+
+                  @Override
+                  protected void done() {
+                    try {
+                      List<File> files = get();
+                      int n = files.size();
+                      if (n > 0) {
+                        int[] selectedIndices = new int[n];
+                        textArea.append("\n" + n + " have not been recovered:\n");
+
+                        int i = 0;
+                        for (File f : files) {
+                          textArea.append(f.getAbsolutePath() + "\n");
+                          selectedIndices[i++] = databaseFileModel.indexOf(f);
+                        }
+                        databaseFileList.setSelectedIndices(selectedIndices);
+                      } else {
+                        textArea.append("\nReady without errors.");
+                      }
+                    } catch (InterruptedException ex) {
+                      Logger.getLogger(H2MigrationUI.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (ExecutionException ex) {
+                      Logger.getLogger(H2MigrationUI.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                  }
+                };
+            executeAndWait(worker, H2MigrationUI.this, textArea);
+          }
+        }
+      };
 
   private final Action migrateAction =
       new AbstractAction("Migrate") {
@@ -632,6 +734,7 @@ public class H2MigrationUI extends JFrame {
 
   private final JButton helpButton = new JButton(helpAction);
   private final JButton exitButton = new JButton(exitAction);
+  private final JButton recoverButton = new JButton(recoverAction);
   private final JButton migrateButton = new JButton(migrateAction);
 
   public H2MigrationUI() {
@@ -900,6 +1003,7 @@ public class H2MigrationUI extends JFrame {
     southEastPanel.add(helpButton);
 
     JPanel southWestPanel = new JPanel(new FlowLayout(FlowLayout.TRAILING, 6, 2));
+    southWestPanel.add(recoverButton);
     southWestPanel.add(migrateButton);
     southWestPanel.add(exitButton);
 

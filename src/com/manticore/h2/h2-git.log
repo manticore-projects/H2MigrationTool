@@ -1,8 +1,4 @@
-commit 4b108e20e
-4b108e20e (Documentation., 2011-06-06)
-1d6fcb231 (Issue 321: the database does not expect XA rollback without XA prepare (an exception was unnecessarily written into the .trace.db file)., 2011-06-07)
-2038f5f69 (Test., 2011-06-07)
-337838205 (Test., 2011-06-07)
+commit 7501daebc
 7501daebc (Test., 2011-06-07)
 0381d8244 (Java functions: array component types are now preserved, so that a ResultSet.getObject() will return Integer[] if the Java functions returns Integer[]. Thanks to Noel Grandin for the patch., 2011-06-07)
 fc19e6474 (Improved performance for reading and writing date and time values., 2011-06-07)
@@ -9999,3 +9995,7 @@ d2d1e34f8 (cleanup import, 2021-05-24)
 70dc0a297 (more COMPRESS LOB removal, 2021-05-24)
 46ea899cc (Merge pull request #3129 from grandinj/pagestore_cleanup3, 2021-05-24)
 212cb2cfe (Merge branch 'master' of https://github.com/h2database/h2database, 2021-05-25)
+0deac3478 (revert changes to NullValueDataType, 2021-05-25)
+4e1fbf871 (Merge remote-tracking branch 'h2database/master' into stronly-typed-lobstoragemap, 2021-05-25)
+1825c9f52 (Merge pull request #3134 from andreitokar/stronly-typed-lobstoragemap, 2021-05-25)
+8c03d6c4a (Merge branch 'master' of https://github.com/h2database/h2database, 2021-05-26)
