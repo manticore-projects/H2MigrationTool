@@ -35,16 +35,9 @@ public class SimpleMigrateTest {
 
   public static final Logger LOGGER = Logger.getLogger(H2MigrationTool.class.getName());
 
-  /*
-   * @Todo: Investigate the Script API Can't test 1.3.175 because: java.lang.NoSuchMethodException:
-   * org.h2.tools.Script.process(java.sql.Connection, java.lang.String, java.lang.String, java.lang.String)
-   */
   public static final String[] H2_VERSIONS =
                                new String[]{
-                                 /*
-                                  * "1.3.175",
-                                  */
-                                 "1.4.196", "1.4.197", "1.4.198", "1.4.199", "1.4.200", "2.0.201"
+                                  "1.3.176", "1.4.199", "1.4.200", "2.0.201"
                                };
 
   /*
@@ -56,7 +49,7 @@ public class SimpleMigrateTest {
                              "\n" +
                              "CREATE TABLE a\n" +
                              "  (\n" +
-                             "     field1 varchar(1)\n" +
+                             "     field1 varchar(1) UNIQUE \n" +
                              "  );\n" +
                              "\n" +
                              "CREATE TABLE b\n" +

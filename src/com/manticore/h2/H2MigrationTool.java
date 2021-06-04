@@ -45,7 +45,7 @@ public class H2MigrationTool {
   public static final Pattern VERSION_PATTERN = Pattern
       .compile("([0-9]+)\\.([0-9]+)\\.([0-9]+)(\\-([a-z0-9]{9}))?", Pattern.CASE_INSENSITIVE);
 
-  protected static final TreeSet<DriverRecord> driverRecords = new TreeSet<>();
+  public static final TreeSet<DriverRecord> driverRecords = new TreeSet<>();
 
   public final static javax.swing.filechooser.FileFilter H2_DATABASE_FILE_FILTER =
       new javax.swing.filechooser.FileFilter() {
@@ -939,7 +939,8 @@ public class H2MigrationTool {
     FilenameFilter filenameFilter = new FilenameFilter() {
       @Override
       public boolean accept(File dir, String name) {
-        return name.toLowerCase().endsWith(".mv.db");
+          String filename = name.toLowerCase();
+        return filename.endsWith(".mv.db") || filename.endsWith(".mv.db");
       }
     };
 
@@ -957,6 +958,10 @@ public class H2MigrationTool {
       if (databaseFileName.toLowerCase().endsWith(".mv.db")) {
         databaseFileName =
             databaseFileName.substring(0, databaseFileName.length() - ".mv.db".length());
+        LOGGER.info("trimmed DB name to: " + databaseFileName);
+      } else if (databaseFileName.toLowerCase().endsWith(".h2.db")) {
+        databaseFileName =
+            databaseFileName.substring(0, databaseFileName.length() - ".h2.db".length());
         LOGGER.info("trimmed DB name to: " + databaseFileName);
       }
 
@@ -1086,7 +1091,7 @@ public class H2MigrationTool {
         return;
       } else if (!line.hasOption("db-file"))
         throw new Exception(
-            "Nothing to concert. Please define the Database to convert,\neither by providing the DB Name or the DB Folder.");
+            "Nothing to convert. Please define the Database to convert,\neither by providing the DB Name or the DB Folder.");
 
       try {
         String ressourceName =
