@@ -24,3 +24,5 @@ java -jar H2MigrationTool.jar -l /home/are/Downloads/h2-libs                    
                               -c ZIP -o VARIABLE_BINARY                             \
                               --force
 ```
+## Graphical User Interface
+![image](https://user-images.githubusercontent.com/18080123/120748212-9bea7980-c52c-11eb-96f0-101f0e47e3eb.png)
