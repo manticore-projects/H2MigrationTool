@@ -372,7 +372,7 @@ public class H2MigrationTool {
     }
 
     LOGGER.info(myPath.toString());
-    for (Path path : findFilesinPathRecursively(myPath, 1, "h2", ".jar")) {
+    for (Path path : findFilesinPathRecursively(myPath, 1, "h2", ".bin")) {
       LOGGER.info("Found H2 library " + path.getFileName().toString());
       try {
         URI resourceUri = path.toUri();
@@ -664,7 +664,7 @@ public class H2MigrationTool {
       // properties);
 
       connection = driver.connect(
-          "jdbc:h2://" + databaseFileName + ";ACCESS_MODE_DATA=r" + connectionParameters,
+          "jdbc:h2:" + databaseFileName + ";ACCESS_MODE_DATA=r" + connectionParameters,
           properties);
 
       List<String> commands = executeHooks(connection, HookStage.IMPORT);
@@ -796,7 +796,7 @@ public class H2MigrationTool {
     Statement stat = null;
     try {
       connection =
-          driver.connect("jdbc:h2://" + databaseFileName + connectionParameters, properties);
+          driver.connect("jdbc:h2:" + databaseFileName + connectionParameters, properties);
       stat = connection.createStatement();
 
       stat.execute("RUNSCRIPT FROM '" + scriptFileName + "' " + options);
