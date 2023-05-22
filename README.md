@@ -1,6 +1,8 @@
 # H2MigrationTool
 A software tool for migration of an old H2 database into a new H2 database format automatically.
 
+[GitHub](https://github.com/manticore-projects/H2MigrationTool) [WebSite](http://manticore-projects.com/H2MigrationTool/README.html)
+
 ## Usage
 Migration
 ```man
