@@ -1,4 +1,4 @@
-# H2MigrationTool
+# H2MigrationTool [**WebSite**](http://manticore-projects.com/H2MigrationTool/index.html)
 A software tool for migration of an old H2 database into a new H2 database format automatically.
 
 ## Usage
@@ -16,7 +16,7 @@ java -jar H2MigrationTool.jar -l <arg> -f <arg> -t <arg> -d <arg>
  -c,--compression <arg>    The Compression Method [ZIP, GZIP]
  -o,--options <arg>        The upgrade options [VARIABLE_BINARY]
     --force                Overwrite files and continue on failure.
- -h,--help                 Show the help mesage.
+ -h,--help                 Show the help message.
 ```
 Recovery
 ```man
