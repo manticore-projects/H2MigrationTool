@@ -28,5 +28,7 @@ hs_err_pid*
 # Ignore Gradle build output directory
 build
 
-gradle
 .idea
+/src/site/sphinx/changelog.rst
+/src/site/sphinx/api.rst
+/src/site/sphinx/changelog.md

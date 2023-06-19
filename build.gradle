@@ -1,65 +1,380 @@
+import se.bjurr.gitchangelog.plugin.gradle.GitChangelogTask
+
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     id 'java'
     id 'application'
     id 'com.github.johnrengelman.shadow' version 'latest.release'
+
+    id 'maven-publish'
+    id 'signing'
+
+    id 'jacoco'
+    id "com.github.spotbugs" version "latest.release"
+    id "com.diffplug.spotless" version "latest.release"
+    id 'pmd'
+    id 'checkstyle'
+
+    id "org.hidetake.ssh" version "latest.release"
+    id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "latest.release"
 }
 
 repositories {
-    // Use Maven Central for resolving dependencies.
+    gradlePluginPortal()
+    mavenLocal()
     mavenCentral()
+    maven {
+        url = uri('https://s01.oss.sonatype.org/content/repositories/snapshots/')
+    }
+}
+
+def getVersion = { boolean considerSnapshot ->
+    int major = 0
+    int minor = 0
+    int patch = 0
+    int build = 0
+    String commit = ""
+    String snapshot = ""
+    new ByteArrayOutputStream().withStream { os ->
+        exec {
+            workingDir "$projectDir"
+            args = [
+                    "--no-pager"
+                    , "describe"
+                    , "--tags"
+                    , "--always"
+                    , "--dirty=-SNAPSHOT"
+            ]
+            executable "git"
+            standardOutput = os
+        }
+        def versionStr = os.toString().trim()
+        def pattern = /(?<major>\d*)\.(?<minor>\d*)(\.(?<patch>\d*))?(-(?<build>\d*)-(?<commit>[a-zA-Z\d]*))?/
+        def matcher = versionStr =~ pattern
+        if (matcher.find()) {
+            major = matcher.group('major') as Integer
+            minor = matcher.group('minor') as Integer
+            patch = matcher.group('patch') as Integer
+            build = matcher.group('build') as Integer
+            commit = matcher.group('commit')
+        }
+
+        if (considerSnapshot && ( versionStr.endsWith('SNAPSHOT') || build>0) ) {
+            minor++
+            patch = 0
+            snapshot =  "-SNAPSHOT"
+        }
+        println("Derived Version: $versionStr --> ${major}.${minor}.${patch}${snapshot}")
+    }
+    return "${major}.${minor}.${patch}${snapshot}"
+}
+version = getVersion(true)
+description = 'Graphical User Interface for Migrating or Recovering H2 Databases from older to newer Versions'
+group = "com.manticore-projects.tools"
+archivesBaseName = "H2MigrationTool"
+
+configurations {
+    xmlDoclet
 }
 
 dependencies {
     implementation 'commons-io:commons-io:2.+'
     implementation 'org.apache.commons:commons-lang3:3.+'
     implementation 'commons-cli:commons-cli:1.+'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.+'
+    testImplementation 'com.h2database:h2:+'
 }
 
-testing {
-    suites {
-        // Configure the built-in test suite
-        test {
-            // Use JUnit Jupiter test framework
-            useJUnitJupiter('5.8.1')
-        }
+configurations.configureEach {
+    resolutionStrategy {
+        // avoid using old Logging APIs with security issues
+        force 'org.apache.logging.log4j:log4j-api:2.+'
+        force 'org.apache.logging.log4j:log4j-core:2.+'
+        force 'org.apache.logging.log4j:log4j-slf4j-impl:2.+'
+        force 'org.apache.logging.log4j:log4j-jul:2.+'
+        force 'org.slf4j:slf4j-log4j12:2.+'
     }
 }
 
+
 java {
+    withSourcesJar()
+    withJavadocJar()
+    sourceCompatibility(JavaVersion.VERSION_1_8)
+    targetCompatibility(JavaVersion.VERSION_1_8)
+
+    // needed for XML-Doclet to work (since Doclet changed again with Java 13)
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(11))
     }
 }
 
 application {
-    // Define the main class for the application.
     mainClass = 'com.manticore.h2.H2MigrationTool'
 }
 
+tasks.register('copyH2Jars') {
+    doFirst {
+        // get H2 GitLog with ordered Hashes
+        exec {
+            executable "sh"
+            args "-c", "git --git-dir=../h2database/.git rev-list --topo-order -10000 HEAD --pretty=reference --abbrev-commit --reverse | sed -n '1p;0~2p' > src/main/resources/com/manticore/h2/h2-git.log"
+        }
+        // get latest H2 version from git
+        exec {
+            executable "sh"
+            args "-c", "git -C ../h2database pull"
+        }
+        // compile H2
+        exec {
+            executable "sh"
+            args "-c", "mvn -f ../h2database/h2 clean package -DskipTests"
+        }
+        // copy the JARs into our resource folder
+        exec {
+            executable "sh"
+            args "-c", "cp ../h2database/h2/target/*.jar src/main/resources/drivers"
+        }
+        // rename to BIN for Shadow JAR compatibility
+        exec {
+            executable "sh"
+            args "-c", """
+                for f in src/main/resources/drivers/*.jar; do 
+                    mv -- \"\$f\" \"\${f%.jar}.bin\"
+                done
+               """
+        }
+    }
+}
+
 shadowJar {
+    dependsOn copyH2Jars
     minimize()
     manifest {
         attributes 'Main-Class': 'com.manticore.h2.H2MigrationTool'
     }
 }
 
-task updateH2GitLog(type: Exec) {
-    executable "sh"
-    args "-c", "git --git-dir=../h2database/.git rev-list --topo-order -10000 HEAD --pretty=reference --abbrev-commit --reverse | sed -n '1p;0~2p' > src/main/resources/com/manticore/h2/h2-git.log"
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+    options.addBooleanOption("Xdoclint:none", true)
 }
 
-task copyH2Jars(type: Exec) {
-    executable "sh"
-    args "-c", "cp ../h2database/h2/target/*.jar src/main/resources/drivers"
+tasks.register('xmldoc', Javadoc) {
+    source = sourceSets.main.allJava
+    destinationDir = reporting.file("xmlDoclet")
+    options.docletpath = configurations.xmlDoclet.files as List
+    options.doclet = "com.github.markusbernhardt.xmldoclet.XmlDoclet"
+
+    options.addBooleanOption("rst", true)
+    options.addStringOption("basePackage", "com.manticore")
+
+    dependsOn(compileJava)
+    doLast {
+        copy {
+            from reporting.file("xmlDoclet/javadoc.rst")
+            into "${projectDir}/src/site/sphinx/"
+        }
+    }
 }
 
-task changeJarFileExtensions(type: Exec) {
-    executable "sh"
-    args "-c", """
-                for f in src/main/resources/drivers/*.jar; do 
-                    mv -- \"\$f\" \"\${f%.jar}.bin\"
-                done
-               """
+test {
+    environment = [ 'SAMPLE_SIZE': '100000' ]
+    // Use JUnit Platform for unit tests.
+    useJUnitPlatform()
+}
+
+
+publish {
+    dependsOn(check)
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'h2migrationtool'
+
+            from components.java
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+            pom {
+                url = 'https://manticore-projects.com/JDBCParquetWriter'
+                licenses {
+                    license {
+                        name = 'The GNU GENERAL PUBLIC LICENSE, Version 3.0'
+                        url = 'https://www.gnu.org/licenses/gpl-3.0.en.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'are'
+                        name = 'Andreas Reichel'
+                        email = 'andreas@manticore-projects.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:https://github.com/manticore-projects/H2MigrationTool.git'
+                    developerConnection = 'scm:git:ssh://git@github.com:manticore-projects/H2MigrationTool.git'
+                    url = 'https://github.com/manticore-projects/H2MigrationTool'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name "ossrh"
+
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl= "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            credentials(PasswordCredentials)
+        }
+        maven {
+            name = "GitHubPackages"
+
+            url = uri("https://maven.pkg.github.com/manticore-projects/h2migrationtool")
+            credentials(PasswordCredentials)
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+spotbugsMain {
+    reports {
+        html {
+            enabled = true
+            destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
+            stylesheet = 'fancy-hist.xsl'
+        }
+    }
+}
+
+spotbugs {
+    excludeFilter = file("config/spotbugs/spotBugsExcludeFilter.xml")
+}
+
+pmd {
+    consoleOutput = true
+    sourceSets = [sourceSets.main]
+
+    // clear the ruleset in order to use configured rules only
+    ruleSets = []
+
+    rulesMinimumPriority = 1
+    ruleSetFiles = files("config/pmd/ruleset.xml")
+}
+
+checkstyle {
+    sourceSets = [sourceSets.main, sourceSets.test]
+    configFile = file('config/checkstyle/checkstyle.xml')
+}
+
+tasks.withType(Checkstyle).configureEach {
+    reports {
+        xml.required = false
+        html.required = true
+    }
+}
+
+spotless {
+    // optional: limit format enforcement to just the files changed by this feature branch
+    ratchetFrom 'origin/master'
+
+    format 'misc', {
+        // define the files to apply `misc` to
+        target '*.rst', '*.md', '.gitignore'
+
+        // define the steps to apply to those files
+        trimTrailingWhitespace()
+        indentWithSpaces(4) // or spaces. Takes an integer argument if you don't like 4
+        endWithNewline()
+    }
+    java {
+        indentWithSpaces(4)
+        eclipse().configFile('config/formatter/eclipse-java-google-style.xml')
+    }
+}
+
+
+jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
+    reports {
+        xml.required = false
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
+    }
+}
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.990
+            }
+        }
+        rule {
+            limit {
+                counter = 'LINE'
+                value = 'MISSEDCOUNT'
+                maximum = 10
+            }
+        }
+        rule {
+            element = 'CLASS'
+            limit {
+                counter = 'LINE'
+                value = 'MISSEDRATIO'
+                maximum = 0.05
+            }
+        }
+    }
+}
+
+tasks.register('gitChangelogTask', GitChangelogTask) {
+    fromRepo = file("$projectDir")
+    file = new File("${projectDir}/src/site/sphinx/changelog.md")
+}
+
+remotes {
+    webServer {
+        host = findProperty("${project.name}.host")
+        user = findProperty("${project.name}.username")
+        identity = new File("${System.properties['user.home']}/.ssh/id_rsa")
+    }
+}
+
+tasks.register('upload') {
+    doFirst {
+        if (findProperty("${project.name}.host") == null) {
+            println(
+                    """
+                Property \"${project.name}.host\' not found.
+                Please define \"${project.name}.host\" in the Gradle configuration (e. g. \$HOME/.gradle/gradle.properties.
+                """
+            )
+        }
+    }
+    doLast {
+        ssh.run {
+            session(remotes.webServer) {
+                def versionStable = getVersion(false)
+                execute "mkdir -p download/${project.name}-${versionStable}"
+                for (File file: fileTree(include:['*.jar'], dir:"${project.buildDir}/libs").collect()) {
+                    put from: file, into: "download/${project.name}-${versionStable}"
+                }
+            }
+        }
+    }
 }
 
