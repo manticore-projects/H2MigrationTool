@@ -23,7 +23,6 @@ import java.util.TreeMap;
 import java.util.logging.Logger;
 
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class Schema implements Comparable<Schema> {
@@ -36,12 +35,12 @@ public class Schema implements Comparable<Schema> {
     TreeMap<String, Table> tables = new TreeMap<>();
 
     public Schema(String tableSchema, String tableCatalog) {
-        this.tableSchema = tableSchema != null
-                ? tableSchema
-                : "";
-        this.tableCatalog = tableCatalog != null
-                ? tableCatalog
-                : "";
+        this.tableSchema = tableSchema!=null
+                           ? tableSchema
+                           :"";
+        this.tableCatalog = tableCatalog!=null
+                            ? tableCatalog
+                            :"";
     }
 
     public static Collection<Schema> getSchemas(DatabaseMetaData metaData) throws SQLException {
@@ -52,23 +51,25 @@ public class Schema implements Comparable<Schema> {
             rs = metaData.getSchemas();
             while (rs.next()) {
                 String tableSchema = rs.getString("TABLE_SCHEM"); // TABLE_SCHEM String => schema
-                                                                  // name
+                // name
                 String tableCatalog =
                         rs.getString("TABLE_CATALOG"); // TABLE_CATALOG String => catalog name (may
-                                                       // be null)
+                // be null)
                 Schema schema = new Schema(tableSchema, tableCatalog);
 
                 schemas.add(schema);
             }
-            if (schemas.isEmpty())
+            if (schemas.isEmpty()) {
                 schemas.add(new Schema("", "."));
+            }
 
         } finally {
             try {
-                if (rs != null && !rs.isClosed())
+                if (rs!=null && !rs.isClosed()) {
                     rs.close();
-            } catch (Exception ex1) {
-
+                }
+            } catch (Exception ignore) {
+                // nothing
             }
         }
         return schemas;
@@ -86,8 +87,9 @@ public class Schema implements Comparable<Schema> {
     public int compareTo(Schema o) {
         int compareTo = tableCatalog.compareToIgnoreCase(o.tableCatalog);
 
-        if (compareTo == 0)
+        if (compareTo==0) {
             compareTo = tableSchema.compareToIgnoreCase(o.tableSchema);
+        }
 
         return compareTo;
     }

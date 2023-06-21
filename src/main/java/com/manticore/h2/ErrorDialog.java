@@ -20,15 +20,16 @@
  */
 package com.manticore.h2;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 
 public class ErrorDialog extends JDialog {
 
@@ -45,15 +46,6 @@ public class ErrorDialog extends JDialog {
                     traceField,
                     JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                     JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-
-    public Action closeAction =
-            new AbstractAction("Close", H2MigrationUI.DIALOG_CANCEL_16_ICON) {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    setVisible(false);
-                }
-            };
-
     public Action traceAction =
             new AbstractAction("Show Details", H2MigrationUI.SEARCH_16_ICON) {
                 @Override
@@ -63,14 +55,20 @@ public class ErrorDialog extends JDialog {
                     pack();
                 }
             };
-
+    public Action closeAction =
+            new AbstractAction("Close", H2MigrationUI.DIALOG_CANCEL_16_ICON) {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    setVisible(false);
+                }
+            };
     public Action emailAction =
             new AbstractAction("Send E-Mail", H2MigrationUI.MAIL_NEW_16_ICON) {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     Desktop desktop;
                     if (Desktop.isDesktopSupported() &&
-                            (desktop = Desktop.getDesktop()).isSupported(Desktop.Action.MAIL))
+                            (desktop = Desktop.getDesktop()).isSupported(Desktop.Action.MAIL)) {
                         try {
                             String mailTo =
                                     URLEncoder.encode("support@manticore-projects.com", "UTF-8");
@@ -89,23 +87,24 @@ public class ErrorDialog extends JDialog {
                             Logger.getLogger(ErrorDialog.class.getName())
                                     .log(Level.SEVERE, "Sending Email through Desktop", ex);
                         }
-                    else
+                    } else {
                         JOptionPane.showMessageDialog(ErrorDialog.this,
                                 "Desktop Extension is not supported.");
+                    }
                 }
             };
 
     public ErrorDialog(Dialog owner, Exception exception) {
-        super(owner, owner != null
-                ? "Error at " + owner.getTitle()
-                : "An Error occured");
+        super(owner, owner!=null
+                     ? "Error at " + owner.getTitle()
+                     :"An Error occured");
         buildUI(exception);
     }
 
     public ErrorDialog(Frame owner, Exception exception) {
-        super(owner, owner != null
-                ? "Error at " + owner.getTitle()
-                : "An Error occured");
+        super(owner, owner!=null
+                     ? "Error at " + owner.getTitle()
+                     :"An Error occured");
         buildUI(exception);
     }
 
@@ -113,11 +112,32 @@ public class ErrorDialog extends JDialog {
         super(
                 owner,
                 owner instanceof Dialog
-                        ? "Error at " + ((Dialog) owner).getTitle()
-                        : owner instanceof Frame
-                                ? "Error at " + ((Frame) owner).getTitle()
-                                : "An Error occured");
+                ? "Error at " + ((Dialog) owner).getTitle()
+                :owner instanceof Frame
+                 ? "Error at " + ((Frame) owner).getTitle()
+                 :"An Error occured");
         buildUI(exception);
+    }
+
+    public static void show(Dialog owner, Exception exception) {
+        ErrorDialog errorDialog = new ErrorDialog(owner, exception);
+        errorDialog.dispose();
+    }
+
+    public static void show(Frame owner, Exception exception) {
+        ErrorDialog errorDialog = new ErrorDialog(owner, exception);
+        errorDialog.dispose();
+    }
+
+    public static void show(Window owner, Exception exception) {
+        ErrorDialog errorDialog = new ErrorDialog(owner, exception);
+        errorDialog.dispose();
+    }
+
+    public static void show(Component component, Exception exception) {
+        Window owner = SwingUtilities.getWindowAncestor(component);
+        ErrorDialog errorDialog = new ErrorDialog(owner, exception);
+        errorDialog.dispose();
     }
 
     private void buildUI(Exception exception) {
@@ -149,8 +169,9 @@ public class ErrorDialog extends JDialog {
         messageField.setCaretPosition(0);
 
         StringBuilder builder = new StringBuilder();
-        for (String trace : ExceptionUtils.getRootCauseStackTrace(exception))
+        for (String trace : ExceptionUtils.getRootCauseStackTrace(exception)) {
             builder.append(trace).append("\n");
+        }
         traceField.setText(builder.toString());
         traceField.setOpaque(false);
         traceField.setEditable(false);
@@ -218,26 +239,5 @@ public class ErrorDialog extends JDialog {
         Logger.getLogger("").log(Level.SEVERE, null, exception);
 
         setVisible(true);
-    }
-
-    public static void show(Dialog owner, Exception exception) {
-        ErrorDialog errorDialog = new ErrorDialog(owner, exception);
-        errorDialog.dispose();
-    }
-
-    public static void show(Frame owner, Exception exception) {
-        ErrorDialog errorDialog = new ErrorDialog(owner, exception);
-        errorDialog.dispose();
-    }
-
-    public static void show(Window owner, Exception exception) {
-        ErrorDialog errorDialog = new ErrorDialog(owner, exception);
-        errorDialog.dispose();
-    }
-
-    public static void show(Component component, Exception exception) {
-        Window owner = SwingUtilities.getWindowAncestor(component);
-        ErrorDialog errorDialog = new ErrorDialog(owner, exception);
-        errorDialog.dispose();
     }
 }

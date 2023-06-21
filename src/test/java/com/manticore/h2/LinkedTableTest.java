@@ -14,35 +14,37 @@
  */
 package com.manticore.h2;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.Socket;
-import java.net.URI;
-import java.sql.*;
-
-import java.util.Properties;
-import java.util.logging.Logger;
 import org.h2.tools.Server;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-/** @author Andreas Reichel <andreas@manticore-projects.com> */
+import java.io.File;
+import java.io.IOException;
+import java.net.Socket;
+import java.net.URI;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+import java.util.Properties;
+import java.util.logging.Logger;
+
+/**
+ * @author Andreas Reichel <andreas@manticore-projects.com>
+ */
 public class LinkedTableTest {
 
     public static final Logger LOGGER = Logger.getLogger(LinkedTableTest.class.getName());
     public static final String H2_VERSION = "2.0.201";
-
+    public static final Properties PROPERTIES = new Properties();
     public static String dbFileUriStr;
-
-    public static final Properties properties = new Properties();
     private static Server server = null;
     private static String connectionStr;
 
     @BeforeAll
     public static void setUp() throws Exception {
-        properties.setProperty("user", "sa");
-        properties.setProperty("password", "");
+        PROPERTIES.setProperty("user", "sa");
+        PROPERTIES.setProperty("password", "");
 
         File file = File.createTempFile("h2_" + H2_VERSION + "_", ".lck");
         file.deleteOnExit();
@@ -65,13 +67,14 @@ public class LinkedTableTest {
             server.start();
         }
 
-        try (Connection con = DriverManager.getConnection(connectionStr, properties);
-                Statement st = con.createStatement();) {
+        try (Connection con = DriverManager.getConnection(connectionStr, PROPERTIES);
+             Statement st = con.createStatement()) {
             st.executeUpdate("CREATE SCHEMA common;");
             st.executeUpdate(
                     "CREATE TABLE common.test (id VARCHAR(40) NOT NULL PRIMARY KEY, field1 VARCHAR(40))");
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 10000; i++) {
                 st.executeUpdate("INSERT INTO common.test VALUES ('" + i + "', 'test')");
+            }
 
             st.executeUpdate("SHUTDOWN");
         }
@@ -79,8 +82,9 @@ public class LinkedTableTest {
 
     @AfterAll
     public static void tearDown() throws Exception {
-        if (server != null)
+        if (server!=null) {
             server.stop();
+        }
 
         URI h2FileUri = new URI(dbFileUriStr + ".mv.db");
         File h2File = new File(h2FileUri);
@@ -97,8 +101,8 @@ public class LinkedTableTest {
                         + dbFileUriStr
                         + "_1;IFEXISTS=FALSE;COMPRESS=TRUE;PAGE_SIZE=128;DB_CLOSE_DELAY=0;AUTO_RECONNECT=FALSE;CACHE_SIZE=8192;MODE=Oracle;LOCK_TIMEOUT=10";
 
-        try (Connection con = DriverManager.getConnection(linkedConnectionStr, properties);
-                Statement st = con.createStatement();) {
+        try (Connection con = DriverManager.getConnection(linkedConnectionStr, PROPERTIES);
+             Statement st = con.createStatement()) {
             st.executeUpdate("CREATE SCHEMA common;");
             st.executeUpdate(
                     "CREATE TABLE common.test (id VARCHAR(40) NOT NULL PRIMARY KEY, field1 VARCHAR(40))");
@@ -124,8 +128,8 @@ public class LinkedTableTest {
         }
         Thread.sleep(5000);
 
-        try (Connection con = DriverManager.getConnection(linkedConnectionStr, properties);
-                Statement st = con.createStatement();) {
+        try (Connection con = DriverManager.getConnection(linkedConnectionStr, PROPERTIES);
+             Statement st = con.createStatement()) {
             st.executeUpdate(
                     "CREATE LINKED TABLE \n"
                             + "IF NOT EXISTS \n"
@@ -150,8 +154,8 @@ public class LinkedTableTest {
         }
         Thread.sleep(5000);
 
-        try (Connection con = DriverManager.getConnection(linkedConnectionStr, properties);
-                Statement st = con.createStatement();) {
+        try (Connection con = DriverManager.getConnection(linkedConnectionStr, PROPERTIES);
+             Statement st = con.createStatement()) {
             st.executeUpdate(
                     "CREATE LINKED TABLE \n"
                             + "IF NOT EXISTS \n"

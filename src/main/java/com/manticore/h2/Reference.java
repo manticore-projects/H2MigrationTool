@@ -17,7 +17,6 @@ package com.manticore.h2;
 import java.util.LinkedList;
 
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class Reference {
@@ -37,8 +36,8 @@ public class Reference {
     LinkedList<String[]> columns = new LinkedList<>();
 
     public Reference(String pkTableCatalog, String pkTableSchema, String pkTableName,
-            String fkTableCatalog, String fkTableSchema, String fkTableName, Short updateRule,
-            Short deleteRule, String fkName, String pkName, Short deferrability) {
+                     String fkTableCatalog, String fkTableSchema, String fkTableName, Short updateRule,
+                     Short deleteRule, String fkName, String pkName, Short deferrability) {
         this.pkTableCatalog = pkTableCatalog;
         this.pkTableSchema = pkTableSchema;
         this.pkTableName = pkTableName;

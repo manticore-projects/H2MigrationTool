@@ -17,7 +17,6 @@ package com.manticore.h2;
 import java.util.TreeMap;
 
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class Index {
@@ -33,8 +32,8 @@ public class Index {
     TreeMap<Short, IndexColumn> columns = new TreeMap<>();
 
     public Index(String tableCatalog, String tableSchema, String tableName, Boolean nonUnique,
-            String indexQualifier,
-            String indexName, Short type) {
+                 String indexQualifier,
+                 String indexName, Short type) {
         this.tableCatalog = tableCatalog;
         this.tableSchema = tableSchema;
         this.tableName = tableName;
@@ -45,8 +44,8 @@ public class Index {
     }
 
     public IndexColumn put(Short ordinalPosition, String columnName, String ascOrDesc,
-            Long cardinality,
-            Long pages, String filterCondition) {
+                           Long cardinality,
+                           Long pages, String filterCondition) {
         IndexColumn column = new IndexColumn(ordinalPosition, columnName, ascOrDesc, cardinality,
                 pages, filterCondition);
         return columns.put(ordinalPosition, column);

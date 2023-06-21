@@ -15,19 +15,19 @@
 package com.manticore.h2;
 
 import com.manticore.Recovery;
-import java.io.File;
-import java.sql.*;
-import java.util.ArrayList;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class CLIRecoveryTest {
@@ -65,11 +65,12 @@ public class CLIRecoveryTest {
         String dbFileUriStr = H2MigrationTool.getAbsoluteFileName(databaseName);
 
         File h2File = new File(dbFileUriStr + ".h2.db");
-        if (h2File.exists())
+        if (h2File.exists()) {
             Assertions.fail(
                     "The H2 Database file " +
                             h2File.getCanonicalPath() +
                             "  exists already. Please remove it manually.");
+        }
 
         Properties properties = new Properties();
         properties.setProperty("user", username);
@@ -77,15 +78,16 @@ public class CLIRecoveryTest {
 
         Driver driver =
                 H2MigrationTool.loadDriver(
-                        (versionFrom != null && versionFrom.length() > 0)
-                                ? versionFrom
-                                : "1.3.176");
+                        (versionFrom!=null && versionFrom.length() > 0)
+                        ? versionFrom
+                        :"1.3.176");
 
         try (Connection con = driver.connect("jdbc:h2:" + dbFileUriStr, properties);
-                Statement st = con.createStatement()) {
+             Statement st = con.createStatement()) {
 
-            for (String sqlStr : DDL_STR.split(";"))
+            for (String sqlStr : DDL_STR.split(";")) {
                 st.executeUpdate(sqlStr);
+            }
 
         } catch (Exception ex) {
             LOGGER.log(
@@ -97,12 +99,12 @@ public class CLIRecoveryTest {
 
         ArrayList<String> args = new ArrayList<>();
 
-        if (versionFrom != null && versionFrom.length() > 0) {
+        if (versionFrom!=null && versionFrom.length() > 0) {
             args.add("-f");
             args.add(versionFrom);
         }
 
-        if (databaseName != null && databaseName.length() > 0) {
+        if (databaseName!=null && databaseName.length() > 0) {
             args.add("-d");
             args.add(h2File.getAbsolutePath());
         }

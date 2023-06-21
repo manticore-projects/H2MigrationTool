@@ -14,19 +14,20 @@
  */
 package com.manticore.h2;
 
-import java.io.File;
-import java.net.URI;
-import java.sql.*;
-
-import java.util.Properties;
-import java.util.logging.Logger;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.net.URI;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Properties;
+import java.util.logging.Logger;
+
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class SimpleCreateDBTest {
@@ -68,7 +69,7 @@ public class SimpleCreateDBTest {
 
     @Test
     public void createTableTest() throws SQLException {
-        try (Statement st = con.createStatement();) {
+        try (Statement st = con.createStatement()) {
             st.executeUpdate("CREATE TABLE test (id VARCHAR(40) NOT NULL PRIMARY KEY)");
         }
     }

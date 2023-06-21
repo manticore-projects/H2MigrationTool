@@ -14,6 +14,8 @@
  */
 package com.manticore.h2;
 
+import org.apache.commons.io.IOUtils;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -22,43 +24,43 @@ import java.util.ArrayList;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.commons.io.IOUtils;
 
-/** @author Andreas Reichel <andreas@manticore-projects.com> */
+/**
+ * @author Andreas Reichel <andreas@manticore-projects.com>
+ */
 public class DriverRecord implements Comparable<DriverRecord> {
     public static final Logger LOGGER = Logger.getLogger(DriverRecord.class.getName());
-
+    // git rev-list --topo-order -10000 HEAD --pretty=reference --abbrev-commit --reverse | sed -n
+    // '1p;0~2p' > ~/data/src/H2MigrationTool/src/com/manticore/h2/h2-git.log
+    public static final ArrayList<String> BUILD_ID_LIST = new ArrayList<>();
     int majorVersion;
     int minorVersion;
     int patchId;
     String buildId;
     URL url;
 
-    // git rev-list --topo-order -10000 HEAD --pretty=reference --abbrev-commit --reverse | sed -n
-    // '1p;0~2p' > ~/data/src/H2MigrationTool/src/com/manticore/h2/h2-git.log
-    public static final ArrayList<String> buildIDs = new ArrayList<>();
-
     public DriverRecord(int majorVersion, int minorVersion, int patchID, String buildId, URL url) {
 
-        if (buildId != null && !buildId.isEmpty())
-            synchronized (buildIDs) {
-                if (buildIDs.isEmpty()) {
+        if (buildId!=null && !buildId.isEmpty()) {
+            synchronized (BUILD_ID_LIST) {
+                if (BUILD_ID_LIST.isEmpty()) {
                     try (InputStream in =
-                            ClassLoader.getSystemResourceAsStream("com/manticore/h2/h2-git.log")) {
+                                 ClassLoader.getSystemResourceAsStream("com/manticore/h2/h2-git.log")) {
                         for (String line : IOUtils.readLines(in, Charset.defaultCharset())) {
                             String id = line.split(" ", 2)[0];
-                            buildIDs.add(id);
+                            BUILD_ID_LIST.add(id);
                         }
                     } catch (IOException ex) {
                         LOGGER.log(Level.SEVERE, null, ex);
                     }
                 }
             }
+        }
 
         this.majorVersion = majorVersion;
         this.minorVersion = minorVersion;
         this.patchId = patchID;
-        this.buildId = buildId == null || buildId.isBlank() ? "" : buildId;
+        this.buildId = buildId==null || buildId.isBlank() ? "":buildId;
         this.url = url;
     }
 
@@ -66,20 +68,22 @@ public class DriverRecord implements Comparable<DriverRecord> {
     public int compareTo(DriverRecord t) {
         int compareTo = Integer.compare(majorVersion, t.majorVersion);
 
-        if (compareTo == 0)
+        if (compareTo==0) {
             compareTo = Integer.compare(minorVersion, t.minorVersion);
+        }
 
-        if (compareTo == 0)
+        if (compareTo==0) {
             compareTo = Integer.compare(patchId, t.patchId);
+        }
 
-        if (compareTo == 0) {
-            if (buildId.isEmpty() && !t.buildId.isEmpty())
+        if (compareTo==0) {
+            if (buildId.isEmpty() && !t.buildId.isEmpty()) {
                 compareTo = -1;
-            else if (!buildId.isEmpty() && t.buildId.isEmpty())
+            } else if (!buildId.isEmpty() && t.buildId.isEmpty()) {
                 compareTo = 1;
-            else if (!buildId.isEmpty() && !t.buildId.isEmpty()) {
-                int i1 = buildIDs.indexOf(buildId);
-                int i2 = buildIDs.indexOf(t.buildId);
+            } else if (!buildId.isEmpty() && !t.buildId.isEmpty()) {
+                int i1 = BUILD_ID_LIST.indexOf(buildId);
+                int i2 = BUILD_ID_LIST.indexOf(t.buildId);
                 compareTo = Integer.compare(i1, i2);
             }
         }
@@ -99,22 +103,26 @@ public class DriverRecord implements Comparable<DriverRecord> {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this==obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj==null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass()!=obj.getClass()) {
             return false;
+        }
         final DriverRecord other = (DriverRecord) obj;
-        if (this.majorVersion != other.majorVersion)
+        if (this.majorVersion!=other.majorVersion) {
             return false;
-        if (this.minorVersion != other.minorVersion)
+        }
+        if (this.minorVersion!=other.minorVersion) {
             return false;
-        if (this.patchId != other.patchId)
+        }
+        if (this.patchId!=other.patchId) {
             return false;
-        if (!Objects.equals(this.buildId, other.buildId))
-            return false;
-        return true;
+        }
+        return Objects.equals(this.buildId, other.buildId);
     }
 
     public String getVersion() {
@@ -123,7 +131,7 @@ public class DriverRecord implements Comparable<DriverRecord> {
                 + minorVersion
                 + "."
                 + patchId
-                + (!buildId.isEmpty() ? ("-" + buildId) : "");
+                + (!buildId.isEmpty() ? ("-" + buildId):"");
     }
 
     @Override

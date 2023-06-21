@@ -64,9 +64,10 @@ def getVersion = { boolean considerSnapshot ->
             patch = 0
             snapshot =  "-SNAPSHOT"
         }
-        println("Derived Version: $versionStr --> ${major}.${minor}.${patch}${snapshot}")
+
+        println("Derived Version: $versionStr --> ${major}.${minor}${snapshot}")
     }
-    return "${major}.${minor}.${patch}${snapshot}"
+    return "${major}.${minor}${snapshot}"
 }
 version = getVersion(true)
 description = 'Graphical User Interface for Migrating or Recovering H2 Databases from older to newer Versions'
@@ -149,7 +150,7 @@ tasks.register('copyH2Jars') {
 }
 
 shadowJar {
-    dependsOn copyH2Jars
+    //dependsOn copyH2Jars
     minimize()
     manifest {
         attributes 'Main-Class': 'com.manticore.h2.H2MigrationTool'

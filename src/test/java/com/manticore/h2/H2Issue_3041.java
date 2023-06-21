@@ -14,26 +14,32 @@
  */
 package com.manticore.h2;
 
-import java.sql.*;
-import java.util.Properties;
+import org.junit.jupiter.api.Test;
 
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.junit.jupiter.api.Test;
 
-/** @author Andreas Reichel <andreas@manticore-projects.com> */
+/**
+ * @author Andreas Reichel <andreas@manticore-projects.com>
+ */
 public class H2Issue_3041 {
 
     public static final Logger LOGGER = Logger.getLogger(H2MigrationTool.class.getName());
-    public static final String H2_VERSION = "2.0.201-2c7cb8658";
+    public static final String H2_VERSION = "2.0.201";
 
     public static final String CONNECTION_URL = "jdbc:h2:mem:test;LOCK_TIMEOUT=1000";
 
     @Test
-    public void createTableTest() throws SQLException, InterruptedException, Exception {
+    public void createTableTest() throws Exception {
         Driver driver = H2MigrationTool.loadDriver(H2_VERSION);
         Properties properties = new Properties();
         properties.setProperty("user", "sa");
@@ -41,13 +47,14 @@ public class H2Issue_3041 {
 
         ExecutorService executor = Executors.newFixedThreadPool(8);
         try (Connection connection = driver.connect(CONNECTION_URL, properties);
-                Statement st = connection.createStatement();) {
+             Statement st = connection.createStatement()) {
 
             try {
                 st.executeUpdate(
                         "CREATE TABLE public.EXAMPLE_0"
                                 + " (GENERATED_ID IDENTITY PRIMARY KEY, SIMPLE_VALUE INT)");
-            } catch (SQLException ex) {
+            } catch (SQLException ignore) {
+                // nothing
             }
 
             executor.submit(
@@ -73,11 +80,11 @@ public class H2Issue_3041 {
                         public void run() {
                             for (int i = 0; i < 10000; i++) {
                                 try (ResultSet rs =
-                                        st.executeQuery(
-                                                "WITH TMP_EXAMPLE_"
-                                                        + i
-                                                        + "  as (SELECT avg(SIMPLE_VALUE) AVG_SIMPLE_VALUE FROM public.EXAMPLE_0)  SELECT * FROM TMP_EXAMPLE_"
-                                                        + i)) {
+                                             st.executeQuery(
+                                                     "WITH TMP_EXAMPLE_"
+                                                             + i
+                                                             + "  as (SELECT avg(SIMPLE_VALUE) AVG_SIMPLE_VALUE FROM public.EXAMPLE_0)  SELECT * FROM TMP_EXAMPLE_"
+                                                             + i)) {
 
                                 } catch (SQLException ex) {
                                     LOGGER.log(Level.SEVERE, "Statement failed on i=" + i, ex);

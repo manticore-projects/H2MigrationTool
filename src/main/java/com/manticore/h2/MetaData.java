@@ -14,13 +14,12 @@
  */
 package com.manticore.h2;
 
-import java.util.TreeMap;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.util.TreeMap;
 
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class MetaData {
@@ -35,11 +34,13 @@ public class MetaData {
     public void build() throws SQLException {
         DatabaseMetaData metaData = con.getMetaData();
 
-        for (Catalog catalog : Catalog.getCatalogs(metaData))
+        for (Catalog catalog : Catalog.getCatalogs(metaData)) {
             put(catalog);
+        }
 
-        for (Schema schema : Schema.getSchemas(metaData))
+        for (Schema schema : Schema.getSchemas(metaData)) {
             put(schema);
+        }
 
         for (Table table : Table.getTables(metaData)) {
             put(table);

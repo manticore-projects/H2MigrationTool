@@ -7,27 +7,23 @@ package com.manticore;
 
 import com.manticore.h2.DriverRecord;
 import com.manticore.h2.H2MigrationTool;
-import static com.manticore.h2.H2MigrationTool.LOGGER;
-import static com.manticore.h2.H2MigrationTool.getAbsoluteFileName;
 import com.manticore.h2.H2MigrationUI;
-import java.awt.GraphicsEnvironment;
-import java.io.File;
-import java.util.Comparator;
-import java.util.logging.Level;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
-import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+
+import javax.swing.*;
+import javax.swing.plaf.nimbus.NimbusLookAndFeel;
+import java.awt.*;
+import java.io.File;
+import java.util.logging.Level;
+
+import static com.manticore.h2.H2MigrationTool.LOGGER;
+import static com.manticore.h2.H2MigrationTool.getAbsoluteFileName;
 
 /**
- *
  * @author are
  */
 public class Recovery {
@@ -48,7 +44,7 @@ public class Recovery {
             // parse the command line arguments
             CommandLine line = parser.parse(options, args);
 
-            if (line.getOptions().length == 0 && !GraphicsEnvironment.isHeadless()) {
+            if (line.getOptions().length==0 && !GraphicsEnvironment.isHeadless()) {
                 System.setProperty("awt.useSystemAAFontSettings", "lcd");
                 System.setProperty("swing.aatext", "true");
                 System.setProperty("prism.lcdtext", "true");
@@ -59,8 +55,8 @@ public class Recovery {
                         try {
                             UIManager.setLookAndFeel(NimbusLookAndFeel.class.getName());
                         } catch (ClassNotFoundException | InstantiationException
-                                | IllegalAccessException
-                                | UnsupportedLookAndFeelException ex) {
+                                 | IllegalAccessException
+                                 | UnsupportedLookAndFeelException ex) {
                             LOGGER.log(Level.SEVERE, "Error when setting the NIMBUS L&F", ex);
                         }
 
@@ -78,24 +74,25 @@ public class Recovery {
                 return;
             }
 
-            if (line.hasOption("help") || line.getOptions().length == 0) {
+            if (line.hasOption("help") || line.getOptions().length==0) {
                 HelpFormatter formatter = new HelpFormatter();
-                formatter.setOptionComparator((Comparator<Option>) null);
+                formatter.setOptionComparator(null);
                 formatter.printHelp("java -cp H2MigrationTool.jar com.manticore.Recovery", options,
                         true);
                 return;
-            } else if (!line.hasOption("db-file"))
+            } else if (!line.hasOption("db-file")) {
                 throw new Exception(
                         "Nothing to recover. Please define the Database to recover,\neither by providing the DB Name or the DB Folder.");
+            }
 
             try {
                 String resourceName =
                         line.hasOption("lib-dir")
-                                ? getAbsoluteFileName(line.getOptionValue("lib-dir"))
-                                : null;
+                        ? getAbsoluteFileName(line.getOptionValue("lib-dir"))
+                        :null;
 
                 String versionFrom =
-                        line.hasOption("version-from") ? line.getOptionValue("version-from") : null;
+                        line.hasOption("version-from") ? line.getOptionValue("version-from"):null;
 
                 String databaseFileName = line.getOptionValue("db-file");
                 databaseFileName = getAbsoluteFileName(databaseFileName);
@@ -106,9 +103,9 @@ public class Recovery {
                 H2MigrationTool app = new H2MigrationTool();
                 H2MigrationTool.readDriverRecords(resourceName);
 
-                if (versionFrom != null && versionFrom.length() > 1) {
+                if (versionFrom!=null && versionFrom.length() > 1) {
                     DriverRecord driverRecordFrom = H2MigrationTool
-                            .getDriverRecord(H2MigrationTool.driverRecords, versionFrom);
+                            .getDriverRecord(H2MigrationTool.DRIVER_RECORDS, versionFrom);
                     app.writeRecoveryScript(driverRecordFrom, databaseFile.getParent(),
                             databaseFile.getName());
                 }
@@ -123,7 +120,7 @@ public class Recovery {
             LOGGER.log(Level.WARNING, "Parsing failed.  Reason: {0}", ex.getMessage());
 
             HelpFormatter formatter = new HelpFormatter();
-            formatter.setOptionComparator((Comparator<Option>) null);
+            formatter.setOptionComparator(null);
             formatter.printHelp("java -cp H2MigrationTool.jar com.manticore.Recovery", options,
                     true);
         }

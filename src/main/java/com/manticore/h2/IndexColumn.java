@@ -15,7 +15,6 @@
 package com.manticore.h2;
 
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class IndexColumn implements Comparable<IndexColumn> {
@@ -28,7 +27,7 @@ public class IndexColumn implements Comparable<IndexColumn> {
     String filterCondition;
 
     public IndexColumn(Short ordinalPosition, String columnName, String ascOrDesc, Long cardinality,
-            Long pages, String filterCondition) {
+                       Long pages, String filterCondition) {
         this.ordinalPosition = ordinalPosition;
         this.columnName = columnName;
         this.ascOrDesc = ascOrDesc;

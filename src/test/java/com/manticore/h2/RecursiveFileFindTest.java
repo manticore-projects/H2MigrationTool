@@ -24,8 +24,9 @@ public class RecursiveFileFindTest {
             String homeFolderStr = H2MigrationTool.getAbsoluteFileName("~");
             LOGGER.info(homeFolderStr);
 
-            for (Path p : H2MigrationTool.findH2Databases(homeFolderStr))
+            for (Path p : H2MigrationTool.findH2Databases(homeFolderStr)) {
                 LOGGER.info(p.toString());
+            }
         } catch (IOException ex) {
             Logger.getLogger(RecursiveFileFindTest.class.getName()).log(Level.SEVERE, null, ex);
         }

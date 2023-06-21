@@ -15,33 +15,33 @@
 package com.manticore.h2;
 
 import com.manticore.h2.H2MigrationTool.ScriptResult;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Properties;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 
-import java.sql.Driver;
-import java.sql.Connection;
-import java.util.*;
-import java.util.List;
-import java.util.Map.Entry;
-import javax.swing.filechooser.FileFilter;
-import org.apache.commons.io.filefilter.FileFileFilter;
-
-/** @author Andreas Reichel <andreas@manticore-projects.com> */
+/**
+ * @author Andreas Reichel <andreas@manticore-projects.com>
+ */
 public class H2MigrationUI extends JFrame {
-
-    private static final Logger LOGGER = Logger.getLogger(H2MigrationUI.class.getName());
 
     public static final ImageIcon LIST_ADD_ICON =
             new ImageIcon(
@@ -55,31 +55,25 @@ public class H2MigrationUI extends JFrame {
             new ImageIcon(
                     ClassLoader.getSystemResource("com/manticore/icons/16/edit-find.png"),
                     "Find a File.");
-
     public static final ImageIcon DIALOG_CANCEL_16_ICON =
             new ImageIcon(
                     ClassLoader.getSystemResource("com/manticore/icons/16/stop.png"),
                     "Cancel the Dialog.");
-
     public static final ImageIcon DIALOG_WARNING_16_ICON =
             new ImageIcon(
                     ClassLoader.getSystemResource("com/manticore/icons/16/dialog-warning.png"),
                     "Dialog Warning.");
-
     public static final ImageIcon SEARCH_16_ICON =
             new ImageIcon(ClassLoader.getSystemResource("com/manticore/icons/16/search.png"),
                     "Search.");
-
     public static final ImageIcon MAIL_NEW_16_ICON =
             new ImageIcon(
                     ClassLoader.getSystemResource("com/manticore/icons/16/mail-read.png"),
                     "Search.");
-
     public static final ImageIcon DIALOG_INFORMATION_64_ICON =
             new ImageIcon(
                     ClassLoader.getSystemResource("com/manticore/icons/64/dialog-information.png"),
                     "Dialog Information.");
-
     public static final ImageIcon DIALOG_ERROR_64_ICON =
             new ImageIcon(
                     ClassLoader.getSystemResource("com/manticore/icons/64/dialog-error.png"),
@@ -88,337 +82,10 @@ public class H2MigrationUI extends JFrame {
             new ImageIcon(
                     ClassLoader.getSystemResource("com/manticore/icons/64/dialog-question.png"),
                     "Dialog Question.");
-
-    public static JDialog getWorkerWaitDialog(Component component) {
-        Window windowAncestor = SwingUtilities.getWindowAncestor(component);
-        JOptionPane p =
-                new JOptionPane(
-                        "Please wait while the data are collected in the background.\nThis will take a few minutes...",
-                        JOptionPane.INFORMATION_MESSAGE,
-                        JOptionPane.DEFAULT_OPTION,
-                        DIALOG_INFORMATION_64_ICON);
-
-        JDialog dialog =
-                new JDialog(windowAncestor, "Operation in progress",
-                        Dialog.ModalityType.APPLICATION_MODAL);
-
-        dialog.setLocationByPlatform(true);
-        dialog.setAlwaysOnTop(true);
-        dialog.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-        dialog.add(p);
-        dialog.pack();
-
-        return dialog;
-    }
-
-    public static void executeAndWait(SwingWorker worker, JDialog dialog) {
-        worker.addPropertyChangeListener(new SwingWorkerCompletionWaiter(dialog));
-        worker.execute();
-
-        // the dialog will be visible until the SwingWorker is done
-        dialog.setVisible(true);
-    }
-
-    public static void executeAndWait(SwingWorker worker, Component component, JTextArea textArea) {
-        Window windowAncestor = SwingUtilities.getWindowAncestor(component);
-        JOptionPane p =
-                new JOptionPane(
-                        new JScrollPane(textArea),
-                        JOptionPane.INFORMATION_MESSAGE,
-                        JOptionPane.DEFAULT_OPTION,
-                        DIALOG_INFORMATION_64_ICON);
-
-        JDialog dialog =
-                new JDialog(windowAncestor, "Operation in progress",
-                        Dialog.ModalityType.APPLICATION_MODAL);
-
-        final Action closeAction =
-                new AbstractAction("Close") {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        if (worker.isDone()) {
-                            dialog.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-                            dialog.setVisible(false);
-                            dialog.dispose();
-                        }
-                    }
-                };
-        closeAction.setEnabled(false);
-
-        final Action cancelAction =
-                new AbstractAction("Cancel", DIALOG_CANCEL_16_ICON) {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        if (!worker.isDone())
-                            worker.cancel(true);
-
-                        dialog.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-                        dialog.setVisible(false);
-                        dialog.dispose();
-                    }
-                };
-        cancelAction.setEnabled(true);
-
-        JLabel iconLabel = new JLabel(DIALOG_INFORMATION_64_ICON);
-        iconLabel.setVerticalAlignment(JLabel.TOP);
-        iconLabel.setBorder(new EmptyBorder(12, 12, 12, 12));
-
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.TRAILING, 6, 2));
-        buttonPanel.add(new JButton(cancelAction));
-        buttonPanel.add(new JButton(closeAction));
-
-        JScrollPane scrollPane = new JScrollPane(textArea);
-        scrollPane.setPreferredSize(new Dimension(320, 180));
-        scrollPane.setWheelScrollingEnabled(true);
-        scrollPane.setFocusable(false);
-
-        textArea.setEditable(false);
-
-        dialog.setLayout(new BorderLayout(6, 6));
-
-        dialog.add(iconLabel, BorderLayout.WEST);
-        dialog.add(scrollPane);
-        dialog.add(buttonPanel, BorderLayout.SOUTH);
-
-        dialog.setLocationByPlatform(true);
-        dialog.setAlwaysOnTop(true);
-        dialog.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-
-        dialog.pack();
-
-        worker.addPropertyChangeListener(
-                new PropertyChangeListener() {
-                    @Override
-                    public void propertyChange(PropertyChangeEvent event) {
-                        if ("state".equals(event.getPropertyName())
-                                && SwingWorker.StateValue.DONE == event.getNewValue()) {
-                            closeAction.setEnabled(true);
-                            cancelAction.setEnabled(false);
-                            dialog.setCursor(Cursor.getDefaultCursor());
-                        }
-                    }
-                });
-        worker.execute();
-
-        dialog.setVisible(true);
-    }
-
-    public static void executeAndWait(SwingWorker worker, Component component) {
-        Window windowAncestor = SwingUtilities.getWindowAncestor(component);
-        JOptionPane p =
-                new JOptionPane(
-                        "Please wait while the data are collected in the background.\nThis will take a few minutes...",
-                        JOptionPane.INFORMATION_MESSAGE,
-                        JOptionPane.DEFAULT_OPTION,
-                        DIALOG_INFORMATION_64_ICON);
-
-        JDialog dialog =
-                new JDialog(windowAncestor, "Operation in progress",
-                        Dialog.ModalityType.APPLICATION_MODAL);
-
-        dialog.setLocationByPlatform(true);
-        dialog.setAlwaysOnTop(true);
-        dialog.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-        dialog.add(p);
-        dialog.pack();
-
-        worker.addPropertyChangeListener(new SwingWorkerCompletionWaiter(dialog));
-        worker.execute();
-
-        // the dialog will be visible until the SwingWorker is done
-        dialog.setVisible(true);
-    }
-
+    private static final Logger LOGGER = Logger.getLogger(H2MigrationUI.class.getName());
+    private static final Font MONOSPACED_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 10);
     private final DefaultListModel<File> databaseFileModel = new DefaultListModel<>();
     private final JList<File> databaseFileList = new JList<>(databaseFileModel);
-    private final JTextField connectionParameterField =
-            new JTextField(";MODE=Oracle;CACHE_SIZE=8192", 22);
-    private final JTextField usernameField = new JTextField("SA", 8);
-    private final JTextField passwordField = new JTextField("", 8);
-
-    private final DefaultListModel<DriverRecord> listModel = new DefaultListModel<>();
-    private final JList<DriverRecord> fromVersionList = new JList<>();
-    private final JList<DriverRecord> toVersionList = new JList<>();
-
-    private final JComboBox<String> compressionBox =
-            new JComboBox<>(new String[] {"", "ZIP", "GZIP"});
-    private final JComboBox<String> repairModeBox =
-            new JComboBox<>(new String[] {"", "REPAIR", "WORK-AROUND"});
-
-    private final JCheckBox varbinaryBox = new JCheckBox("Convert BINARY to VARBINARY", false);
-    private final JCheckBox quirksModeBox = new JCheckBox("Quirks Mode", true);
-    private final JCheckBox overwriteBox = new JCheckBox("Overwrite", false);
-
-    private static final Font MONOSPACED_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 10);
-
-
-
-    private final Action addDatabaseFileAction =
-            new AbstractAction("Add Database File", LIST_ADD_ICON) {
-                @Override
-                public void actionPerformed(ActionEvent ae) {
-                    ArrayList<Exception> exceptions = new ArrayList<>();
-
-                    JFileChooser fileChooser = new JFileChooser();
-                    fileChooser.addChoosableFileFilter(H2MigrationTool.H2_DATABASE_FILE_FILTER);
-                    fileChooser.addChoosableFileFilter(H2MigrationTool.SQL_SCRIPT_FILE_FILTER);
-                    fileChooser.setDialogTitle("Select the H2 Database Files and Directories");
-                    fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-                    fileChooser.setFileHidingEnabled(false);
-                    fileChooser.setDialogType(JFileChooser.OPEN_DIALOG);
-                    fileChooser.setSelectedFile(H2MigrationTool.getAbsoluteFile("~"));
-
-                    int result = fileChooser.showOpenDialog(H2MigrationUI.this);
-
-                    if (JFileChooser.APPROVE_OPTION == result) {
-                        File[] selectedFiles = fileChooser.getSelectedFiles();
-                        if (selectedFiles.length == 0) {
-                            File selectedFile = fileChooser.getSelectedFile();
-
-                            if (selectedFile.isDirectory()) {
-                                try {
-                                    SwingWorker<Collection<Path>, Path> worker =
-                                            new SwingWorker<Collection<Path>, Path>() {
-                                                @Override
-                                                protected Collection<Path> doInBackground()
-                                                        throws Exception {
-                                                    return H2MigrationTool.findH2Databases(
-                                                            selectedFile.getAbsolutePath());
-                                                }
-                                            };
-
-                                    executeAndWait(worker, H2MigrationUI.this);
-
-                                    Collection<Path> h2DatabasePaths = worker.get();
-                                    for (Path p : h2DatabasePaths)
-                                        databaseFileModel.addElement(p.toFile());
-                                } catch (InterruptedException ex) {
-                                    Logger.getLogger(H2MigrationUI.class.getName())
-                                            .log(Level.SEVERE, null, ex);
-                                } catch (ExecutionException ex) {
-                                    Logger.getLogger(H2MigrationUI.class.getName())
-                                            .log(Level.SEVERE, null, ex);
-                                }
-                            } else {
-                                LOGGER.info(selectedFile.getAbsolutePath());
-                                databaseFileModel.addElement(selectedFile);
-                            }
-
-                        } else
-                            for (File f : selectedFiles) {
-                                LOGGER.info(f.getAbsolutePath());
-                                databaseFileModel.addElement(f);
-                            }
-
-                        if (!exceptions.isEmpty()) {
-                            Exception ex = new Exception("Could not read all files.");
-                            for (Exception ex1 : exceptions)
-                                ex.addSuppressed(ex1);
-
-                            LOGGER.log(Level.WARNING, "Failed to read some files.", ex);
-                        }
-                    }
-                }
-            };
-
-    private final Action addDatabaseDriversAction =
-            new AbstractAction("Add H2 Drivers", LIST_ADD_ICON) {
-                @Override
-                public void actionPerformed(ActionEvent ae) {
-                    ArrayList<Exception> exceptions = new ArrayList<>();
-
-                    JFileChooser fileChooser = new JFileChooser();
-                    fileChooser.setDialogTitle("Select the H2 Database Files and Directories");
-                    fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-                    fileChooser.setFileHidingEnabled(false);
-                    fileChooser.setDialogType(JFileChooser.OPEN_DIALOG);
-                    fileChooser.setSelectedFile(
-                            H2MigrationTool.getAbsoluteFile("~/.m2/repository/com/h2database/h2"));
-
-                    int result = fileChooser.showOpenDialog(H2MigrationUI.this);
-
-                    if (JFileChooser.APPROVE_OPTION == result) {
-                        File[] selectedFiles = fileChooser.getSelectedFiles();
-                        if (selectedFiles.length == 0) {
-                            File selectedFile = fileChooser.getSelectedFile();
-
-                            if (selectedFile.isDirectory()) {
-                                try {
-                                    SwingWorker<Collection<Path>, Path> worker =
-                                            new SwingWorker<Collection<Path>, Path>() {
-                                                @Override
-                                                protected Collection<Path> doInBackground()
-                                                        throws Exception {
-                                                    return H2MigrationTool.findH2Drivers(
-                                                            selectedFile.getAbsolutePath());
-                                                }
-                                            };
-
-                                    executeAndWait(worker, H2MigrationUI.this);
-
-                                    Collection<Path> h2DriverPaths = worker.get();
-                                    for (Path p : h2DriverPaths) {
-                                        try {
-                                            H2MigrationTool.readDriverRecord(p);
-                                        } catch (Exception ex) {
-                                            exceptions.add(ex);
-                                        }
-                                    }
-
-                                } catch (Exception ex) {
-                                    LOGGER.log(Level.SEVERE, null, ex);
-                                }
-                            } else {
-                                LOGGER.info(selectedFile.getAbsolutePath());
-                                try {
-                                    H2MigrationTool.readDriverRecord(selectedFile.toPath());
-                                } catch (Exception ex) {
-                                    exceptions.add(ex);
-                                }
-                            }
-
-                        } else
-                            for (File f : selectedFiles) {
-                                LOGGER.info(f.getAbsolutePath());
-                                try {
-                                    H2MigrationTool.readDriverRecord(f.toPath());
-                                } catch (Exception ex) {
-                                    exceptions.add(ex);
-                                }
-                            }
-
-                        if (!exceptions.isEmpty()) {
-                            Exception ex = new Exception("Could not read all Driver files.");
-                            for (Exception ex1 : exceptions)
-                                ex.addSuppressed(ex1);
-
-                            LOGGER.log(Level.WARNING, "Failed to read some files.", ex);
-                        }
-                    }
-
-                    listModel.clear();
-                    listModel.addAll(H2MigrationTool.driverRecords);
-                }
-            };
-
-    private final Action helpAction =
-            new AbstractAction("Help") {
-                @Override
-                public void actionPerformed(ActionEvent ae) {
-                    ErrorDialog.show(
-                            H2MigrationUI.this,
-                            new UnsupportedOperationException("Not supported yet."));
-                }
-            };
-
-    private final Action exitAction =
-            new AbstractAction("Exit") {
-                @Override
-                public void actionPerformed(ActionEvent ae) {
-                    setVisible(false);
-                }
-            };
-
     private final Action recoverAction =
             new AbstractAction("Recover") {
                 @Override
@@ -426,7 +93,7 @@ public class H2MigrationUI extends JFrame {
                     int[] selectedIndices = databaseFileList.getSelectedIndices();
                     int result = JOptionPane.NO_OPTION;
 
-                    if (databaseFileList.getModel().getSize() > 0 && selectedIndices.length == 0)
+                    if (databaseFileList.getModel().getSize() > 0 && selectedIndices.length==0) {
                         result =
                                 JOptionPane.showConfirmDialog(
                                         H2MigrationUI.this,
@@ -435,7 +102,7 @@ public class H2MigrationUI extends JFrame {
                                         JOptionPane.YES_NO_OPTION,
                                         JOptionPane.QUESTION_MESSAGE,
                                         DIALOG_QUESTION_64_ICON);
-                    else if (selectedIndices.length > 0)
+                    } else if (selectedIndices.length > 0) {
                         result =
                                 JOptionPane.showConfirmDialog(
                                         H2MigrationUI.this,
@@ -445,8 +112,9 @@ public class H2MigrationUI extends JFrame {
                                         JOptionPane.YES_NO_OPTION,
                                         JOptionPane.QUESTION_MESSAGE,
                                         DIALOG_QUESTION_64_ICON);
+                    }
 
-                    if (result == JOptionPane.YES_OPTION) {
+                    if (result==JOptionPane.YES_OPTION) {
                         ArrayList<String> messages = new ArrayList<>();
                         final JTextArea textArea = new JTextArea(24, 72);
                         textArea.setFont(MONOSPACED_FONT);
@@ -464,12 +132,14 @@ public class H2MigrationUI extends JFrame {
                                         ArrayList<File> databaseFiles = new ArrayList<>();
                                         ArrayList<File> failedDatabaseFiles = new ArrayList<>();
 
-                                        if (selectedIndices.length > 0)
-                                            for (int i : selectedIndices)
+                                        if (selectedIndices.length > 0) {
+                                            for (int i : selectedIndices) {
                                                 databaseFiles.add(databaseFileModel.get(i));
-                                        else
+                                            }
+                                        } else {
                                             databaseFiles.addAll(
                                                     Collections.list(databaseFileModel.elements()));
+                                        }
 
                                         for (final File f : databaseFiles) {
                                             try {
@@ -533,7 +203,7 @@ public class H2MigrationUI extends JFrame {
                     }
                 }
             };
-
+    private final JButton recoverButton = new JButton(recoverAction);
     private final Action migrateAction =
             new AbstractAction("Migrate") {
                 @Override
@@ -541,7 +211,7 @@ public class H2MigrationUI extends JFrame {
                     int[] selectedIndices = databaseFileList.getSelectedIndices();
                     int result = JOptionPane.NO_OPTION;
 
-                    if (databaseFileList.getModel().getSize() > 0 && selectedIndices.length == 0)
+                    if (databaseFileList.getModel().getSize() > 0 && selectedIndices.length==0) {
                         result =
                                 JOptionPane.showConfirmDialog(
                                         H2MigrationUI.this,
@@ -550,7 +220,7 @@ public class H2MigrationUI extends JFrame {
                                         JOptionPane.YES_NO_OPTION,
                                         JOptionPane.QUESTION_MESSAGE,
                                         DIALOG_QUESTION_64_ICON);
-                    else if (selectedIndices.length > 0)
+                    } else if (selectedIndices.length > 0) {
                         result =
                                 JOptionPane.showConfirmDialog(
                                         H2MigrationUI.this,
@@ -560,8 +230,9 @@ public class H2MigrationUI extends JFrame {
                                         JOptionPane.YES_NO_OPTION,
                                         JOptionPane.QUESTION_MESSAGE,
                                         DIALOG_QUESTION_64_ICON);
+                    }
 
-                    if (result == JOptionPane.YES_OPTION) {
+                    if (result==JOptionPane.YES_OPTION) {
                         ArrayList<String> messages = new ArrayList<>();
                         final JTextArea textArea = new JTextArea(24, 72);
                         textArea.setFont(MONOSPACED_FONT);
@@ -587,36 +258,40 @@ public class H2MigrationUI extends JFrame {
                                         ArrayList<File> databaseFiles = new ArrayList<>();
                                         ArrayList<File> failedDatabaseFiles = new ArrayList<>();
 
-                                        if (selectedIndices.length > 0)
-                                            for (int i : selectedIndices)
+                                        if (selectedIndices.length > 0) {
+                                            for (int i : selectedIndices) {
                                                 databaseFiles.add(databaseFileModel.get(i));
-                                        else
+                                            }
+                                        } else {
                                             databaseFiles.addAll(
                                                     Collections.list(databaseFileModel.elements()));
+                                        }
 
                                         for (final File f : databaseFiles) {
                                             try {
                                                 String versionFrom =
-                                                        from != null ? from.getVersion() : "";
+                                                        from!=null ? from.getVersion():"";
                                                 String versionTo =
-                                                        to != null ? to.getVersion() : "";
+                                                        to!=null ? to.getVersion():"";
 
                                                 String username = usernameField.getText();
                                                 String password = passwordField.getText();
 
                                                 String upgradeOptions =
                                                         quirksModeBox.isSelected() ? "QUIRKS_MODE"
-                                                                : "";
-                                                if (varbinaryBox.isSelected())
+                                                                                   :"";
+                                                if (varbinaryBox.isSelected()) {
                                                     upgradeOptions +=
                                                             upgradeOptions.isEmpty()
-                                                                    ? "VARIABLE_BINARY"
-                                                                    : " VARIABLE_BINARY";
+                                                            ? "VARIABLE_BINARY"
+                                                            :" VARIABLE_BINARY";
+                                                }
 
                                                 String compression =
                                                         (String) compressionBox.getSelectedItem();
-                                                if (compression != null && compression.length() > 0)
+                                                if (compression!=null && compression.length() > 0) {
                                                     compression = "COMPRESSION " + compression;
+                                                }
 
                                                 boolean overwrite = overwriteBox.isSelected();
 
@@ -689,17 +364,17 @@ public class H2MigrationUI extends JFrame {
                     }
                 }
             };
-
+    private final JButton migrateButton = new JButton(migrateAction);
     private final Action removeDatabaseFileAction =
             new AbstractAction("Remove Database File", LIST_REMOVE_ICON) {
                 @Override
                 public void actionPerformed(ActionEvent ae) {
                     int[] selectedIndices = databaseFileList.getSelectedIndices();
-                    for (int i = selectedIndices.length - 1; i >= 0; i--)
+                    for (int i = selectedIndices.length - 1; i >= 0; i--) {
                         databaseFileModel.remove(selectedIndices[i]);
+                    }
                 }
             };
-
     private final Action verifyDatabaseFileAction =
             new AbstractAction("Verify Database File", DIALOG_WARNING_16_ICON) {
                 @Override
@@ -707,7 +382,7 @@ public class H2MigrationUI extends JFrame {
                     int[] selectedIndices = databaseFileList.getSelectedIndices();
                     int result = JOptionPane.NO_OPTION;
 
-                    if (databaseFileList.getModel().getSize() > 0 && selectedIndices.length == 0)
+                    if (databaseFileList.getModel().getSize() > 0 && selectedIndices.length==0) {
                         result =
                                 JOptionPane.showConfirmDialog(
                                         H2MigrationUI.this,
@@ -716,7 +391,7 @@ public class H2MigrationUI extends JFrame {
                                         JOptionPane.YES_NO_OPTION,
                                         JOptionPane.QUESTION_MESSAGE,
                                         DIALOG_QUESTION_64_ICON);
-                    else if (selectedIndices.length > 0)
+                    } else if (selectedIndices.length > 0) {
                         result =
                                 JOptionPane.showConfirmDialog(
                                         H2MigrationUI.this,
@@ -726,8 +401,9 @@ public class H2MigrationUI extends JFrame {
                                         JOptionPane.YES_NO_OPTION,
                                         JOptionPane.QUESTION_MESSAGE,
                                         DIALOG_QUESTION_64_ICON);
+                    }
 
-                    if (result == JOptionPane.YES_OPTION) {
+                    if (result==JOptionPane.YES_OPTION) {
                         TreeMap<File, Collection<Recommendation>> recommendations = new TreeMap<>();
                         SwingWorker worker =
                                 new SwingWorker() {
@@ -744,27 +420,32 @@ public class H2MigrationUI extends JFrame {
                                                 driverRecord.getVersion());
 
                                         ArrayList<File> databaseFiles = new ArrayList<>();
-                                        if (selectedIndices.length > 0)
-                                            for (int i : selectedIndices)
+                                        if (selectedIndices.length > 0) {
+                                            for (int i : selectedIndices) {
                                                 databaseFiles.add(databaseFileModel.get(i));
-                                        else
+                                            }
+                                        } else {
                                             databaseFiles.addAll(
                                                     Collections.list(databaseFileModel.elements()));
+                                        }
 
                                         for (File f : databaseFiles) {
                                             String fileName = f.getAbsolutePath();
-                                            if (fileName.toLowerCase().endsWith(".mv.db"))
+                                            if (fileName.toLowerCase().endsWith(".mv.db")) {
                                                 fileName = fileName.substring(0,
                                                         fileName.length() - ".mv.db".length());
+                                            }
                                             try (Connection con = driver
                                                     .connect("jdbc:h2:" + fileName, properties)) {
                                                 Collection<Recommendation> r =
                                                         MetaDataTools.verifyDecinmalPrecision(con);
-                                                if (!r.isEmpty())
-                                                    if (!recommendations.containsKey(f))
+                                                if (!r.isEmpty()) {
+                                                    if (!recommendations.containsKey(f)) {
                                                         recommendations.put(f, r);
-                                                    else
+                                                    } else {
                                                         recommendations.get(f).addAll(r);
+                                                    }
+                                                }
                                             }
                                         }
                                         return recommendations;
@@ -796,14 +477,333 @@ public class H2MigrationUI extends JFrame {
                     }
                 }
             };
+    private final JTextField connectionParameterField =
+            new JTextField(";MODE=Oracle;CACHE_SIZE=8192", 22);
+    private final JTextField usernameField = new JTextField("SA", 8);
+    private final JTextField passwordField = new JTextField("", 8);
+    private final DefaultListModel<DriverRecord> listModel = new DefaultListModel<>();
+    private final JList<DriverRecord> fromVersionList = new JList<>();
+    private final JList<DriverRecord> toVersionList = new JList<>();
+    private final JComboBox<String> compressionBox =
+            new JComboBox<>(new String[]{"", "ZIP", "GZIP"});
+    private final JComboBox<String> repairModeBox =
+            new JComboBox<>(new String[]{"", "REPAIR", "WORK-AROUND"});
+    private final JCheckBox varbinaryBox = new JCheckBox("Convert BINARY to VARBINARY", false);
+    private final JCheckBox quirksModeBox = new JCheckBox("Quirks Mode", true);
+    private final JCheckBox overwriteBox = new JCheckBox("Overwrite", false);
+    private final Action addDatabaseFileAction =
+            new AbstractAction("Add Database File", LIST_ADD_ICON) {
+                @Override
+                public void actionPerformed(ActionEvent ae) {
+                    ArrayList<Exception> exceptions = new ArrayList<>();
 
+                    JFileChooser fileChooser = new JFileChooser();
+                    fileChooser.addChoosableFileFilter(H2MigrationTool.H2_DATABASE_FILE_FILTER);
+                    fileChooser.addChoosableFileFilter(H2MigrationTool.SQL_SCRIPT_FILE_FILTER);
+                    fileChooser.setDialogTitle("Select the H2 Database Files and Directories");
+                    fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+                    fileChooser.setFileHidingEnabled(false);
+                    fileChooser.setDialogType(JFileChooser.OPEN_DIALOG);
+                    fileChooser.setSelectedFile(H2MigrationTool.getAbsoluteFile("~"));
+
+                    int result = fileChooser.showOpenDialog(H2MigrationUI.this);
+
+                    if (JFileChooser.APPROVE_OPTION==result) {
+                        File[] selectedFiles = fileChooser.getSelectedFiles();
+                        if (selectedFiles.length==0) {
+                            File selectedFile = fileChooser.getSelectedFile();
+
+                            if (selectedFile.isDirectory()) {
+                                try {
+                                    SwingWorker<Collection<Path>, Path> worker =
+                                            new SwingWorker<Collection<Path>, Path>() {
+                                                @Override
+                                                protected Collection<Path> doInBackground()
+                                                        throws Exception {
+                                                    return H2MigrationTool.findH2Databases(
+                                                            selectedFile.getAbsolutePath());
+                                                }
+                                            };
+
+                                    executeAndWait(worker, H2MigrationUI.this);
+
+                                    Collection<Path> h2DatabasePaths = worker.get();
+                                    for (Path p : h2DatabasePaths) {
+                                        databaseFileModel.addElement(p.toFile());
+                                    }
+                                } catch (InterruptedException ex) {
+                                    Logger.getLogger(H2MigrationUI.class.getName())
+                                            .log(Level.SEVERE, null, ex);
+                                } catch (ExecutionException ex) {
+                                    Logger.getLogger(H2MigrationUI.class.getName())
+                                            .log(Level.SEVERE, null, ex);
+                                }
+                            } else {
+                                LOGGER.info(selectedFile.getAbsolutePath());
+                                databaseFileModel.addElement(selectedFile);
+                            }
+
+                        } else {
+                            for (File f : selectedFiles) {
+                                LOGGER.info(f.getAbsolutePath());
+                                databaseFileModel.addElement(f);
+                            }
+                        }
+
+                        if (!exceptions.isEmpty()) {
+                            Exception ex = new Exception("Could not read all files.");
+                            for (Exception ex1 : exceptions) {
+                                ex.addSuppressed(ex1);
+                            }
+
+                            LOGGER.log(Level.WARNING, "Failed to read some files.", ex);
+                        }
+                    }
+                }
+            };
+    private final Action addDatabaseDriversAction =
+            new AbstractAction("Add H2 Drivers", LIST_ADD_ICON) {
+                @Override
+                public void actionPerformed(ActionEvent ae) {
+                    ArrayList<Exception> exceptions = new ArrayList<>();
+
+                    JFileChooser fileChooser = new JFileChooser();
+                    fileChooser.setDialogTitle("Select the H2 Database Files and Directories");
+                    fileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+                    fileChooser.setFileHidingEnabled(false);
+                    fileChooser.setDialogType(JFileChooser.OPEN_DIALOG);
+                    fileChooser.setSelectedFile(
+                            H2MigrationTool.getAbsoluteFile("~/.m2/repository/com/h2database/h2"));
+
+                    int result = fileChooser.showOpenDialog(H2MigrationUI.this);
+
+                    if (JFileChooser.APPROVE_OPTION==result) {
+                        File[] selectedFiles = fileChooser.getSelectedFiles();
+                        if (selectedFiles.length==0) {
+                            File selectedFile = fileChooser.getSelectedFile();
+
+                            if (selectedFile.isDirectory()) {
+                                try {
+                                    SwingWorker<Collection<Path>, Path> worker =
+                                            new SwingWorker<Collection<Path>, Path>() {
+                                                @Override
+                                                protected Collection<Path> doInBackground()
+                                                        throws Exception {
+                                                    return H2MigrationTool.findH2Drivers(
+                                                            selectedFile.getAbsolutePath());
+                                                }
+                                            };
+
+                                    executeAndWait(worker, H2MigrationUI.this);
+
+                                    Collection<Path> h2DriverPaths = worker.get();
+                                    for (Path p : h2DriverPaths) {
+                                        try {
+                                            H2MigrationTool.readDriverRecord(p);
+                                        } catch (Exception ex) {
+                                            exceptions.add(ex);
+                                        }
+                                    }
+
+                                } catch (Exception ex) {
+                                    LOGGER.log(Level.SEVERE, null, ex);
+                                }
+                            } else {
+                                LOGGER.info(selectedFile.getAbsolutePath());
+                                try {
+                                    H2MigrationTool.readDriverRecord(selectedFile.toPath());
+                                } catch (Exception ex) {
+                                    exceptions.add(ex);
+                                }
+                            }
+
+                        } else {
+                            for (File f : selectedFiles) {
+                                LOGGER.info(f.getAbsolutePath());
+                                try {
+                                    H2MigrationTool.readDriverRecord(f.toPath());
+                                } catch (Exception ex) {
+                                    exceptions.add(ex);
+                                }
+                            }
+                        }
+
+                        if (!exceptions.isEmpty()) {
+                            Exception ex = new Exception("Could not read all Driver files.");
+                            for (Exception ex1 : exceptions) {
+                                ex.addSuppressed(ex1);
+                            }
+
+                            LOGGER.log(Level.WARNING, "Failed to read some files.", ex);
+                        }
+                    }
+
+                    listModel.clear();
+                    listModel.addAll(H2MigrationTool.DRIVER_RECORDS);
+                }
+            };
+    private final Action helpAction =
+            new AbstractAction("Help") {
+                @Override
+                public void actionPerformed(ActionEvent ae) {
+                    ErrorDialog.show(
+                            H2MigrationUI.this,
+                            new UnsupportedOperationException("Not supported yet."));
+                }
+            };
+    private final Action exitAction =
+            new AbstractAction("Exit") {
+                @Override
+                public void actionPerformed(ActionEvent ae) {
+                    setVisible(false);
+                }
+            };
     private final JButton helpButton = new JButton(helpAction);
     private final JButton exitButton = new JButton(exitAction);
-    private final JButton recoverButton = new JButton(recoverAction);
-    private final JButton migrateButton = new JButton(migrateAction);
 
     public H2MigrationUI() {
         super("H2 Database Migration Tool");
+    }
+
+    public static JDialog getWorkerWaitDialog(Component component) {
+        Window windowAncestor = SwingUtilities.getWindowAncestor(component);
+        JOptionPane p =
+                new JOptionPane(
+                        "Please wait while the data are collected in the background.\nThis will take a few minutes...",
+                        JOptionPane.INFORMATION_MESSAGE,
+                        JOptionPane.DEFAULT_OPTION,
+                        DIALOG_INFORMATION_64_ICON);
+
+        JDialog dialog =
+                new JDialog(windowAncestor, "Operation in progress",
+                        Dialog.ModalityType.APPLICATION_MODAL);
+
+        dialog.setLocationByPlatform(true);
+        dialog.setAlwaysOnTop(true);
+        dialog.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        dialog.add(p);
+        dialog.pack();
+
+        return dialog;
+    }
+
+    public static void executeAndWait(SwingWorker worker, JDialog dialog) {
+        worker.addPropertyChangeListener(new SwingWorkerCompletionWaiter(dialog));
+        worker.execute();
+
+        // the dialog will be visible until the SwingWorker is done
+        dialog.setVisible(true);
+    }
+
+    public static void executeAndWait(SwingWorker worker, Component component, JTextArea textArea) {
+        Window windowAncestor = SwingUtilities.getWindowAncestor(component);
+        JOptionPane p =
+                new JOptionPane(
+                        new JScrollPane(textArea),
+                        JOptionPane.INFORMATION_MESSAGE,
+                        JOptionPane.DEFAULT_OPTION,
+                        DIALOG_INFORMATION_64_ICON);
+
+        JDialog dialog =
+                new JDialog(windowAncestor, "Operation in progress",
+                        Dialog.ModalityType.APPLICATION_MODAL);
+
+        final Action closeAction =
+                new AbstractAction("Close") {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        if (worker.isDone()) {
+                            dialog.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                            dialog.setVisible(false);
+                            dialog.dispose();
+                        }
+                    }
+                };
+        closeAction.setEnabled(false);
+
+        final Action cancelAction =
+                new AbstractAction("Cancel", DIALOG_CANCEL_16_ICON) {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        if (!worker.isDone()) {
+                            worker.cancel(true);
+                        }
+
+                        dialog.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                        dialog.setVisible(false);
+                        dialog.dispose();
+                    }
+                };
+        cancelAction.setEnabled(true);
+
+        JLabel iconLabel = new JLabel(DIALOG_INFORMATION_64_ICON);
+        iconLabel.setVerticalAlignment(JLabel.TOP);
+        iconLabel.setBorder(new EmptyBorder(12, 12, 12, 12));
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.TRAILING, 6, 2));
+        buttonPanel.add(new JButton(cancelAction));
+        buttonPanel.add(new JButton(closeAction));
+
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(320, 180));
+        scrollPane.setWheelScrollingEnabled(true);
+        scrollPane.setFocusable(false);
+
+        textArea.setEditable(false);
+
+        dialog.setLayout(new BorderLayout(6, 6));
+
+        dialog.add(iconLabel, BorderLayout.WEST);
+        dialog.add(scrollPane);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.setLocationByPlatform(true);
+        dialog.setAlwaysOnTop(true);
+        dialog.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+        dialog.pack();
+
+        worker.addPropertyChangeListener(
+                new PropertyChangeListener() {
+                    @Override
+                    public void propertyChange(PropertyChangeEvent event) {
+                        if ("state".equals(event.getPropertyName())
+                                && SwingWorker.StateValue.DONE==event.getNewValue()) {
+                            closeAction.setEnabled(true);
+                            cancelAction.setEnabled(false);
+                            dialog.setCursor(Cursor.getDefaultCursor());
+                        }
+                    }
+                });
+        worker.execute();
+
+        dialog.setVisible(true);
+    }
+
+    public static void executeAndWait(SwingWorker worker, Component component) {
+        Window windowAncestor = SwingUtilities.getWindowAncestor(component);
+        JOptionPane p =
+                new JOptionPane(
+                        "Please wait while the data are collected in the background.\nThis will take a few minutes...",
+                        JOptionPane.INFORMATION_MESSAGE,
+                        JOptionPane.DEFAULT_OPTION,
+                        DIALOG_INFORMATION_64_ICON);
+
+        JDialog dialog =
+                new JDialog(windowAncestor, "Operation in progress",
+                        Dialog.ModalityType.APPLICATION_MODAL);
+
+        dialog.setLocationByPlatform(true);
+        dialog.setAlwaysOnTop(true);
+        dialog.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        dialog.add(p);
+        dialog.pack();
+
+        worker.addPropertyChangeListener(new SwingWorkerCompletionWaiter(dialog));
+        worker.execute();
+
+        // the dialog will be visible until the SwingWorker is done
+        dialog.setVisible(true);
     }
 
     private final String getLabel(String label, int annotation) {
@@ -848,15 +848,15 @@ public class H2MigrationUI extends JFrame {
         databaseFileList.setPrototypeCellValue(new File(String.copyValueOf(new char[255])));
 
         listModel.clear();
-        listModel.addAll(H2MigrationTool.driverRecords);
+        listModel.addAll(H2MigrationTool.DRIVER_RECORDS);
 
         fromVersionList.setModel(listModel);
         fromVersionList.setSelectedValue(
-                H2MigrationTool.getDriverRecord(H2MigrationTool.driverRecords, 1, 4), true);
+                H2MigrationTool.getDriverRecord(H2MigrationTool.DRIVER_RECORDS, 1, 4), true);
 
         toVersionList.setModel(listModel);
         toVersionList.setSelectedValue(
-                H2MigrationTool.getDriverRecord(H2MigrationTool.driverRecords, 2, 0), true);
+                H2MigrationTool.getDriverRecord(H2MigrationTool.DRIVER_RECORDS, 2, 0), true);
 
         compressionBox.setSelectedIndex(1);
 
@@ -1088,7 +1088,7 @@ public class H2MigrationUI extends JFrame {
 
     private static class SwingWorkerCompletionWaiter implements PropertyChangeListener {
 
-        private JDialog dialog;
+        private final JDialog dialog;
 
         public SwingWorkerCompletionWaiter(JDialog dialog) {
             this.dialog = dialog;
@@ -1096,7 +1096,7 @@ public class H2MigrationUI extends JFrame {
 
         public void propertyChange(PropertyChangeEvent event) {
             if ("state".equals(event.getPropertyName())
-                    && SwingWorker.StateValue.DONE == event.getNewValue()) {
+                    && SwingWorker.StateValue.DONE==event.getNewValue()) {
                 dialog.setCursor(Cursor.getDefaultCursor());
                 dialog.setVisible(false);
                 dialog.dispose();

@@ -14,20 +14,20 @@
  */
 package com.manticore.h2;
 
-import java.io.File;
-import java.net.URI;
-import java.sql.*;
-import java.util.ArrayList;
-
-import java.util.Properties;
-import java.util.logging.Logger;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.net.URI;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Properties;
+import java.util.logging.Logger;
+
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class SimpleMigrateTest {
@@ -35,7 +35,7 @@ public class SimpleMigrateTest {
     public static final Logger LOGGER = Logger.getLogger(H2MigrationTool.class.getName());
 
     public static final String[] H2_VERSIONS =
-            new String[] {
+            new String[]{
                     "1.3.176", "1.4.199", "1.4.200", "2.0.201"
             };
 
@@ -79,12 +79,13 @@ public class SimpleMigrateTest {
             Driver driver = H2MigrationTool.loadDriver(versionStr);
 
             try (Connection con =
-                    driver.connect("jdbc:h2:" + dbFileUriStr.get(dbFileUriStr.size() - 1),
-                            properties);
-                    Statement st = con.createStatement();) {
+                         driver.connect("jdbc:h2:" + dbFileUriStr.get(dbFileUriStr.size() - 1),
+                                 properties);
+                 Statement st = con.createStatement()) {
 
-                for (String sqlStr : DDL_STR.split(";"))
+                for (String sqlStr : DDL_STR.split(";")) {
                     st.executeUpdate(sqlStr);
+                }
             }
         }
     }

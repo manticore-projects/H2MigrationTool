@@ -5,23 +5,21 @@
 package com.manticore.h2;
 
 /**
- *
  * @author are
  */
 public class Recommendation {
-    public static enum Type {
-        DECIMAL_PRECISION
-    }
-
     public Type type;
     public Object object;
     public String issue;
     public String recommendation;
-
     public Recommendation(Type type, Object object, String issue, String recommendation) {
         this.type = type;
         this.object = object;
         this.issue = issue;
         this.recommendation = recommendation;
+    }
+
+    public enum Type {
+        DECIMAL_PRECISION
     }
 }

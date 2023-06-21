@@ -14,42 +14,42 @@
  */
 package com.manticore.h2;
 
+import org.h2.tools.Server;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.URI;
-import java.sql.*;
-
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.h2.tools.Server;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class SimpleParallelDDL {
 
     public static final Logger LOGGER = Logger.getLogger(SimpleParallelDDL.class.getName());
     public static final String H2_VERSION = "2.0.201";
-
+    public final static Properties PROPERTIES = new Properties();
     public static String dbFileUriStr;
-
-    public final static Properties properties = new Properties();
     private static Server server = null;
     private static String connectionStr;
 
     @BeforeAll
     public static void setUp() throws Exception {
-        properties.setProperty("user", "sa");
-        properties.setProperty("password", "");
+        PROPERTIES.setProperty("user", "sa");
+        PROPERTIES.setProperty("password", "");
 
         File file = File.createTempFile("h2_" + H2_VERSION + "_", ".lck");
         file.deleteOnExit();
@@ -73,18 +73,20 @@ public class SimpleParallelDDL {
 
         try (Connection con = DriverManager.getConnection(
                 connectionStr,
-                properties);
-                Statement st = con.createStatement();) {
+                PROPERTIES);
+             Statement st = con.createStatement()) {
             st.executeUpdate("CREATE TABLE test (id VARCHAR(40) NOT NULL PRIMARY KEY)");
-            for (int i = 0; i < 10000; i++)
+            for (int i = 0; i < 10000; i++) {
                 st.executeUpdate("INSERT INTO test VALUES ('" + i + "')");
+            }
         }
     }
 
     @AfterAll
     public static void tearDown() throws Exception {
-        if (server != null)
+        if (server!=null) {
             server.stop();
+        }
 
         URI h2FileUri = new URI(dbFileUriStr + ".mv.db");
         File h2File = new File(h2FileUri);
@@ -104,8 +106,8 @@ public class SimpleParallelDDL {
             exec.submit(new Runnable() {
                 @Override
                 public void run() {
-                    try (Connection con = DriverManager.getConnection(connectionStr, properties);
-                            Statement st = con.createStatement();) {
+                    try (Connection con = DriverManager.getConnection(connectionStr, PROPERTIES);
+                         Statement st = con.createStatement()) {
                         st.executeUpdate(
                                 "CREATE /*LOCAL TEMPORARY*/ TABLE " + tableName
                                         + " AS  SELECT a.id FROM test a INNER JOIN test b ON a.id=b.id");

@@ -15,17 +15,17 @@
 package com.manticore.h2;
 
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
-
 import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- *
  * @author Andreas Reichel<andreas@manticore-projects.com>
- *
  */
 public class MetaDataTools {
 
@@ -41,14 +41,14 @@ public class MetaDataTools {
         MetaData meta = new MetaData(con);
         meta.build();
 
-        for (Catalog cat : meta.catalogs.values())
-            for (Schema schema : cat.schemas.values())
-                for (Table table : schema.tables.values())
-                    for (Column column : table.columns)
+        for (Catalog cat : meta.catalogs.values()) {
+            for (Schema schema : cat.schemas.values()) {
+                for (Table table : schema.tables.values()) {
+                    for (Column column : table.columns) {
                         if (Set.of(java.sql.Types.DECIMAL, java.sql.Types.NUMERIC)
                                 .contains(column.dataType)
                                 && (column.columnSize > 128 || column.decimalDigits > 128)) {
-                            LOGGER.warning("Found suspicious column: " + column.toString());
+                            LOGGER.warning("Found suspicious column: " + column);
 
                             int precision = 0;
                             int scale = 0;
@@ -57,7 +57,7 @@ public class MetaDataTools {
                                             + column.tableSchema + "\".\"" + column.tableName
                                             + "\"";
                             try (Statement st = con.createStatement();
-                                    ResultSet rs = st.executeQuery(sqlStr);) {
+                                 ResultSet rs = st.executeQuery(sqlStr)) {
                                 while (rs.next()) {
                                     BigDecimal d = rs.getBigDecimal(1);
 
@@ -89,6 +89,10 @@ public class MetaDataTools {
                                 recommendations.add(recommendation);
                             }
                         }
+                    }
+                }
+            }
+        }
 
         return recommendations;
     }

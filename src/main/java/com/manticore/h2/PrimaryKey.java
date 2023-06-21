@@ -17,7 +17,6 @@ package com.manticore.h2;
 import java.util.LinkedList;
 
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class PrimaryKey {
@@ -30,7 +29,7 @@ public class PrimaryKey {
     LinkedList<String> columnNames = new LinkedList<>();
 
     public PrimaryKey(String tableCatalog, String tableSchema, String tableName,
-            String primaryKeyName) {
+                      String primaryKeyName) {
         this.tableCatalog = tableCatalog;
         this.tableSchema = tableSchema;
         this.tableName = tableName;

@@ -23,7 +23,6 @@ import java.util.TreeMap;
 import java.util.logging.Logger;
 
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class Catalog implements Comparable<Catalog> {
@@ -36,12 +35,12 @@ public class Catalog implements Comparable<Catalog> {
     TreeMap<String, Schema> schemas = new TreeMap<>();
 
     public Catalog(String tableCatalog, String catalogSeparator) {
-        this.tableCatalog = tableCatalog != null
-                ? tableCatalog
-                : "";
-        this.catalogSeparator = catalogSeparator != null
-                ? catalogSeparator
-                : ".";
+        this.tableCatalog = tableCatalog!=null
+                            ? tableCatalog
+                            :"";
+        this.catalogSeparator = catalogSeparator!=null
+                                ? catalogSeparator
+                                :".";
     }
 
     public static Collection<Catalog> getCatalogs(DatabaseMetaData metaData) throws SQLException {
@@ -57,15 +56,17 @@ public class Catalog implements Comparable<Catalog> {
 
                 catalogs.add(catalog);
             }
-            if (catalogs.isEmpty())
+            if (catalogs.isEmpty()) {
                 catalogs.add(new Catalog("", "."));
+            }
 
         } finally {
             try {
-                if (rs != null && !rs.isClosed())
+                if (rs!=null && !rs.isClosed()) {
                     rs.close();
-            } catch (Exception ex1) {
-
+                }
+            } catch (Exception ignore) {
+                //nothing
             }
         }
         return catalogs;

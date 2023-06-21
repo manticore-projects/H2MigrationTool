@@ -14,19 +14,19 @@
  */
 package com.manticore.h2;
 
-import java.io.File;
-import java.sql.*;
-import java.util.ArrayList;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class CommandLineTest {
@@ -67,11 +67,12 @@ public class CommandLineTest {
         String dbFileUriStr = H2MigrationTool.getAbsoluteFileName(databaseName);
 
         File h2File = new File(dbFileUriStr + ".mv.db");
-        if (h2File.exists())
+        if (h2File.exists()) {
             Assertions.fail(
                     "The H2 Database file " +
                             h2File.getCanonicalPath() +
                             "  exists already. Please remove it manually.");
+        }
 
         Properties properties = new Properties();
         properties.setProperty("user", username);
@@ -79,14 +80,15 @@ public class CommandLineTest {
 
         Driver driver =
                 H2MigrationTool.loadDriver(
-                        (versionFrom != null && versionFrom.length() > 0)
-                                ? versionFrom
-                                : "1.4.200");
+                        (versionFrom!=null && versionFrom.length() > 0)
+                        ? versionFrom
+                        :"1.4.200");
         try (Connection con = driver.connect("jdbc:h2:" + dbFileUriStr, properties);
-                Statement st = con.createStatement()) {
+             Statement st = con.createStatement()) {
 
-            for (String sqlStr : DDL_STR.split(";"))
+            for (String sqlStr : DDL_STR.split(";")) {
                 st.executeUpdate(sqlStr);
+            }
 
         } catch (Exception ex) {
             LOGGER.log(
@@ -98,27 +100,27 @@ public class CommandLineTest {
 
         ArrayList<String> args = new ArrayList<>();
 
-        if (versionFrom != null && versionFrom.length() > 0) {
+        if (versionFrom!=null && versionFrom.length() > 0) {
             args.add("-f");
             args.add(versionFrom);
         }
 
-        if (versionTo != null && versionTo.length() > 0) {
+        if (versionTo!=null && versionTo.length() > 0) {
             args.add("-t");
             args.add(versionTo);
         }
 
-        if (databaseName != null && databaseName.length() > 0) {
+        if (databaseName!=null && databaseName.length() > 0) {
             args.add("-d");
             args.add(databaseName);
         }
 
-        if (compression != null && compression.length() > 0) {
+        if (compression!=null && compression.length() > 0) {
             args.add("-c");
             args.add(compression);
         }
 
-        if (options != null && options.length() > 0) {
+        if (options!=null && options.length() > 0) {
             args.add("-o");
             args.add(options);
         }
@@ -154,27 +156,27 @@ public class CommandLineTest {
 
         ArrayList<String> args = new ArrayList<>();
 
-        if (versionFrom != null && versionFrom.length() > 0) {
+        if (versionFrom!=null && versionFrom.length() > 0) {
             args.add("-f");
             args.add(versionFrom);
         }
 
-        if (versionTo != null && versionTo.length() > 0) {
+        if (versionTo!=null && versionTo.length() > 0) {
             args.add("-t");
             args.add(versionTo);
         }
 
-        if (databaseName != null && databaseName.length() > 0) {
+        if (databaseName!=null && databaseName.length() > 0) {
             args.add("-d");
             args.add(databaseName);
         }
 
-        if (compression != null && compression.length() > 0) {
+        if (compression!=null && compression.length() > 0) {
             args.add("-c");
             args.add(compression);
         }
 
-        if (options != null && options.length() > 0) {
+        if (options!=null && options.length() > 0) {
             args.add("-o");
             args.add(options);
         }
@@ -187,8 +189,6 @@ public class CommandLineTest {
             H2MigrationTool.main(args.toArray(new String[args.size()]));
         } catch (Exception ex) {
             Assertions.fail(ex.getMessage());
-        } finally {
-
         }
     }
 }

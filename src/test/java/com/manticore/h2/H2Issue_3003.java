@@ -14,29 +14,26 @@
  */
 package com.manticore.h2;
 
-import java.io.File;
-import java.net.URI;
-import java.sql.*;
-
-import java.util.Properties;
-import java.util.logging.Logger;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.io.File;
+import java.net.URI;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Properties;
+import java.util.logging.Logger;
+
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class H2Issue_3003 {
 
     public static final Logger LOGGER = Logger.getLogger(H2MigrationTool.class.getName());
     public static final String H2_VERSION = "2.0.201";
-
-    public static Connection con = null;
-    public static String dbFileUriStr;
-
     public static final String DDL_STR = "CREATE SCHEMA common;\n" +
             "CREATE SEQUENCE common.currency_ref_seq START WITH 0;\n" +
             "CREATE TABLE common.currency\n" +
@@ -46,6 +43,8 @@ public class H2Issue_3003 {
             "     , description VARCHAR(255)\n" +
             "  );\n" +
             "ALTER TABLE common.currency ADD UNIQUE (ref_currency);";
+    public static Connection con = null;
+    public static String dbFileUriStr;
 
     @BeforeAll
     public static void setUp() throws Exception {
@@ -78,9 +77,10 @@ public class H2Issue_3003 {
 
     @Test
     public void createTableTest() throws SQLException {
-        try (Statement st = con.createStatement();) {
-            for (String command : DDL_STR.split(";"))
+        try (Statement st = con.createStatement()) {
+            for (String command : DDL_STR.split(";")) {
                 st.executeUpdate(command);
+            }
         }
     }
 

@@ -14,6 +14,8 @@
  */
 package com.manticore.h2;
 
+import org.apache.commons.io.IOUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -26,10 +28,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.commons.io.IOUtils;
 
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class ReferencesWithoutPrimaryKey {
@@ -78,26 +78,29 @@ public class ReferencesWithoutPrimaryKey {
             Statement st = null;
             try {
                 st = con.createStatement();
-                for (String s : scriptContent.split(";"))
+                for (String s : scriptContent.split(";")) {
                     st.execute(s);
+                }
             } catch (Exception ex) {
                 LOGGER.log(Level.SEVERE, null, ex);
             } finally {
-                if (st != null & !st.isClosed())
+                if (st!=null && !st.isClosed()) {
                     try {
                         st.close();
-                    } catch (Exception ex1) {
-
+                    } catch (Exception ignore) {
+                        // nothing
                     }
+                }
             }
 
         } finally {
-            if (con != null && !con.isClosed())
+            if (con!=null && !con.isClosed()) {
                 try {
                     con.close();
-                } catch (Exception ex1) {
-
+                } catch (Exception ignore) {
+                    // nothing
                 }
+            }
         }
     }
 
@@ -124,21 +127,23 @@ public class ReferencesWithoutPrimaryKey {
             } catch (Exception ex) {
                 LOGGER.log(Level.SEVERE, null, ex);
             } finally {
-                if (st != null & !st.isClosed())
+                if (st!=null && !st.isClosed()) {
                     try {
                         st.close();
-                    } catch (Exception ex1) {
-
+                    } catch (Exception ignore) {
+                        // nothing
                     }
+                }
             }
 
         } finally {
-            if (con != null && !con.isClosed())
+            if (con!=null && !con.isClosed()) {
                 try {
                     con.close();
-                } catch (Exception ex1) {
-
+                } catch (Exception ignore) {
+                    // nothing
                 }
+            }
         }
 
         return ddlStatements;

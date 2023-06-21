@@ -15,7 +15,6 @@
 package com.manticore.h2;
 
 /**
- *
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class Column implements Comparable<Column> {
@@ -90,25 +89,28 @@ public class Column implements Comparable<Column> {
     @Override
     public int compareTo(Column o) {
         int compareTo =
-                tableCatalog == null && o.tableCatalog == null
-                        ? 0
-                        : tableCatalog != null
-                                ? tableCatalog.compareToIgnoreCase(o.tableCatalog)
-                                : -o.tableCatalog.compareToIgnoreCase(tableCatalog);
+                tableCatalog==null && o.tableCatalog==null
+                ? 0
+                :tableCatalog!=null
+                 ? tableCatalog.compareToIgnoreCase(o.tableCatalog)
+                 :-o.tableCatalog.compareToIgnoreCase(tableCatalog);
 
-        if (compareTo == 0)
+        if (compareTo==0) {
             compareTo =
-                    tableSchema == null && o.tableSchema == null
-                            ? 0
-                            : tableSchema != null
-                                    ? tableSchema.compareToIgnoreCase(o.tableSchema)
-                                    : -o.tableSchema.compareToIgnoreCase(tableSchema);
+                    tableSchema==null && o.tableSchema==null
+                    ? 0
+                    :tableSchema!=null
+                     ? tableSchema.compareToIgnoreCase(o.tableSchema)
+                     :-o.tableSchema.compareToIgnoreCase(tableSchema);
+        }
 
-        if (compareTo == 0)
+        if (compareTo==0) {
             compareTo = tableName.compareToIgnoreCase(o.tableName);
+        }
 
-        if (compareTo == 0)
+        if (compareTo==0) {
             compareTo = ordinalPosition.compareTo(o.ordinalPosition);
+        }
 
         return compareTo;
     }
