@@ -98,7 +98,7 @@ Maven Artifacts
         <dependency>
             <groupId>com.manticore-projects.tools</groupId>
             <artifactId>H2MigrationTool</artifactId>
-            <version>|JH2MIGRATIONTOOL_SNAPSHOT_VERSION|</version>
+            <version>|H2MIGRATIONTOOL_SNAPSHOT_VERSION|</version>
         </dependency>
 
 .. tab:: Gradle Stable
