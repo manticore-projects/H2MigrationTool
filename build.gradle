@@ -102,8 +102,8 @@ configurations.configureEach {
 java {
     withSourcesJar()
     withJavadocJar()
-    sourceCompatibility(JavaVersion.VERSION_1_8)
-    targetCompatibility(JavaVersion.VERSION_1_8)
+    sourceCompatibility(JavaVersion.VERSION_11)
+    targetCompatibility(JavaVersion.VERSION_11)
 
     // needed for XML-Doclet to work (since Doclet changed again with Java 13)
     toolchain {
@@ -150,7 +150,6 @@ tasks.register('copyH2Jars') {
 }
 
 shadowJar {
-    //dependsOn copyH2Jars
     minimize()
     manifest {
         attributes 'Main-Class': 'com.manticore.h2.H2MigrationTool'

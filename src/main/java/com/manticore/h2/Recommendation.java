@@ -8,13 +8,10 @@ package com.manticore.h2;
  * @author are
  */
 public class Recommendation {
-    public Type type;
-    public Object object;
     public String issue;
     public String recommendation;
-    public Recommendation(Type type, Object object, String issue, String recommendation) {
-        this.type = type;
-        this.object = object;
+
+    public Recommendation(String issue, String recommendation) {
         this.issue = issue;
         this.recommendation = recommendation;
     }

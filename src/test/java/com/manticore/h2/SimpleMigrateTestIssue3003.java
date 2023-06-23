@@ -30,12 +30,12 @@ import java.util.logging.Logger;
 /**
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
-public class simpleMigrateTestIssue3003 {
+public class SimpleMigrateTestIssue3003 {
 
     public static final Logger LOGGER = Logger.getLogger(H2MigrationTool.class.getName());
 
     public static final String[] H2_VERSIONS =
-            new String[]{
+            new String[] {
                     "1.4.196", "1.4.197", "1.4.198", "1.4.199", "1.4.200", "2.0.201"
             };
 
@@ -69,9 +69,9 @@ public class simpleMigrateTestIssue3003 {
             Driver driver = H2MigrationTool.loadDriver(versionStr);
 
             try (Connection con =
-                         driver.connect("jdbc:h2:" + dbFileUriStr.get(dbFileUriStr.size() - 1),
-                                 properties);
-                 Statement st = con.createStatement()) {
+                    driver.connect("jdbc:h2:" + dbFileUriStr.get(dbFileUriStr.size() - 1),
+                            properties);
+                    Statement st = con.createStatement()) {
 
                 for (String sqlStr : DDL_STR.split(";")) {
                     st.executeUpdate(sqlStr);

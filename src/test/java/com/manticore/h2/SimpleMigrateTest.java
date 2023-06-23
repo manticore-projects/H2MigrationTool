@@ -35,7 +35,7 @@ public class SimpleMigrateTest {
     public static final Logger LOGGER = Logger.getLogger(H2MigrationTool.class.getName());
 
     public static final String[] H2_VERSIONS =
-            new String[]{
+            new String[] {
                     "1.3.176", "1.4.199", "1.4.200", "2.0.201"
             };
 
@@ -79,9 +79,9 @@ public class SimpleMigrateTest {
             Driver driver = H2MigrationTool.loadDriver(versionStr);
 
             try (Connection con =
-                         driver.connect("jdbc:h2:" + dbFileUriStr.get(dbFileUriStr.size() - 1),
-                                 properties);
-                 Statement st = con.createStatement()) {
+                    driver.connect("jdbc:h2:" + dbFileUriStr.get(dbFileUriStr.size() - 1),
+                            properties);
+                    Statement st = con.createStatement()) {
 
                 for (String sqlStr : DDL_STR.split(";")) {
                     st.executeUpdate(sqlStr);

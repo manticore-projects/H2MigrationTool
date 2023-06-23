@@ -95,16 +95,16 @@ public class ErrorDialog extends JDialog {
             };
 
     public ErrorDialog(Dialog owner, Exception exception) {
-        super(owner, owner!=null
-                     ? "Error at " + owner.getTitle()
-                     :"An Error occured");
+        super(owner, owner != null
+                ? "Error at " + owner.getTitle()
+                : "An Error occured");
         buildUI(exception);
     }
 
     public ErrorDialog(Frame owner, Exception exception) {
-        super(owner, owner!=null
-                     ? "Error at " + owner.getTitle()
-                     :"An Error occured");
+        super(owner, owner != null
+                ? "Error at " + owner.getTitle()
+                : "An Error occured");
         buildUI(exception);
     }
 
@@ -112,10 +112,10 @@ public class ErrorDialog extends JDialog {
         super(
                 owner,
                 owner instanceof Dialog
-                ? "Error at " + ((Dialog) owner).getTitle()
-                :owner instanceof Frame
-                 ? "Error at " + ((Frame) owner).getTitle()
-                 :"An Error occured");
+                        ? "Error at " + ((Dialog) owner).getTitle()
+                        : owner instanceof Frame
+                                ? "Error at " + ((Frame) owner).getTitle()
+                                : "An Error occured");
         buildUI(exception);
     }
 

@@ -44,7 +44,7 @@ public class Recovery {
             // parse the command line arguments
             CommandLine line = parser.parse(options, args);
 
-            if (line.getOptions().length==0 && !GraphicsEnvironment.isHeadless()) {
+            if (line.getOptions().length == 0 && !GraphicsEnvironment.isHeadless()) {
                 System.setProperty("awt.useSystemAAFontSettings", "lcd");
                 System.setProperty("swing.aatext", "true");
                 System.setProperty("prism.lcdtext", "true");
@@ -55,8 +55,8 @@ public class Recovery {
                         try {
                             UIManager.setLookAndFeel(NimbusLookAndFeel.class.getName());
                         } catch (ClassNotFoundException | InstantiationException
-                                 | IllegalAccessException
-                                 | UnsupportedLookAndFeelException ex) {
+                                | IllegalAccessException
+                                | UnsupportedLookAndFeelException ex) {
                             LOGGER.log(Level.SEVERE, "Error when setting the NIMBUS L&F", ex);
                         }
 
@@ -74,7 +74,7 @@ public class Recovery {
                 return;
             }
 
-            if (line.hasOption("help") || line.getOptions().length==0) {
+            if (line.hasOption("help") || line.getOptions().length == 0) {
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.setOptionComparator(null);
                 formatter.printHelp("java -cp H2MigrationTool.jar com.manticore.Recovery", options,
@@ -88,11 +88,11 @@ public class Recovery {
             try {
                 String resourceName =
                         line.hasOption("lib-dir")
-                        ? getAbsoluteFileName(line.getOptionValue("lib-dir"))
-                        :null;
+                                ? getAbsoluteFileName(line.getOptionValue("lib-dir"))
+                                : null;
 
                 String versionFrom =
-                        line.hasOption("version-from") ? line.getOptionValue("version-from"):null;
+                        line.hasOption("version-from") ? line.getOptionValue("version-from") : null;
 
                 String databaseFileName = line.getOptionValue("db-file");
                 databaseFileName = getAbsoluteFileName(databaseFileName);
@@ -103,9 +103,9 @@ public class Recovery {
                 H2MigrationTool app = new H2MigrationTool();
                 H2MigrationTool.readDriverRecords(resourceName);
 
-                if (versionFrom!=null && versionFrom.length() > 1) {
+                if (versionFrom != null && versionFrom.length() > 1) {
                     DriverRecord driverRecordFrom = H2MigrationTool
-                            .getDriverRecord(H2MigrationTool.DRIVER_RECORDS, versionFrom);
+                            .getDriverRecord(H2MigrationTool.getDriverRecords(), versionFrom);
                     app.writeRecoveryScript(driverRecordFrom, databaseFile.getParent(),
                             databaseFile.getName());
                 }

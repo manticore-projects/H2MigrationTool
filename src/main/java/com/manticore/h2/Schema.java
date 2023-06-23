@@ -19,6 +19,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.logging.Logger;
 
@@ -35,12 +36,12 @@ public class Schema implements Comparable<Schema> {
     TreeMap<String, Table> tables = new TreeMap<>();
 
     public Schema(String tableSchema, String tableCatalog) {
-        this.tableSchema = tableSchema!=null
-                           ? tableSchema
-                           :"";
-        this.tableCatalog = tableCatalog!=null
-                            ? tableCatalog
-                            :"";
+        this.tableSchema = tableSchema != null
+                ? tableSchema
+                : "";
+        this.tableCatalog = tableCatalog != null
+                ? tableCatalog
+                : "";
     }
 
     public static Collection<Schema> getSchemas(DatabaseMetaData metaData) throws SQLException {
@@ -65,7 +66,7 @@ public class Schema implements Comparable<Schema> {
 
         } finally {
             try {
-                if (rs!=null && !rs.isClosed()) {
+                if (rs != null && !rs.isClosed()) {
                     rs.close();
                 }
             } catch (Exception ignore) {
@@ -87,10 +88,38 @@ public class Schema implements Comparable<Schema> {
     public int compareTo(Schema o) {
         int compareTo = tableCatalog.compareToIgnoreCase(o.tableCatalog);
 
-        if (compareTo==0) {
+        if (compareTo == 0) {
             compareTo = tableSchema.compareToIgnoreCase(o.tableSchema);
         }
 
         return compareTo;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Schema)) {
+            return false;
+        }
+
+        Schema schema = (Schema) o;
+
+        if (!tableSchema.equals(schema.tableSchema)) {
+            return false;
+        }
+        if (!Objects.equals(tableCatalog, schema.tableCatalog)) {
+            return false;
+        }
+        return Objects.equals(tables, schema.tables);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = tableSchema.hashCode();
+        result = 31 * result + (tableCatalog != null ? tableCatalog.hashCode() : 0);
+        result = 31 * result + (tables != null ? tables.hashCode() : 0);
+        return result;
     }
 }

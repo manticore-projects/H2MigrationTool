@@ -20,6 +20,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.logging.Logger;
@@ -138,7 +139,7 @@ public class Table implements Comparable<Table> {
 
         } finally {
             try {
-                if (rs!=null && !rs.isClosed()) {
+                if (rs != null && !rs.isClosed()) {
                     rs.close();
                 }
             } catch (Exception ignore) {
@@ -265,11 +266,11 @@ public class Table implements Comparable<Table> {
 
         } finally {
             try {
-                if (rs!=null && !rs.isClosed()) {
+                if (rs != null && !rs.isClosed()) {
                     rs.close();
                 }
             } catch (Exception ignore) {
-                //nothing
+                // nothing
             }
         }
     }
@@ -342,7 +343,7 @@ public class Table implements Comparable<Table> {
                 // null)
 
                 Index index = indices.get(indexName.toUpperCase());
-                if (index==null) {
+                if (index == null) {
                     index =
                             new Index(
                                     tableCatalog, tableSchema, tableName, nonUnique, indexQualifier,
@@ -355,7 +356,7 @@ public class Table implements Comparable<Table> {
 
         } finally {
             try {
-                if (rs!=null && !rs.isClosed()) {
+                if (rs != null && !rs.isClosed()) {
                     rs.close();
                 }
             } catch (Exception ignore) {
@@ -390,7 +391,7 @@ public class Table implements Comparable<Table> {
                 String primaryKeyName =
                         rs.getString("PK_NAME"); // PK_NAME String => primary key name (may be null)
 
-                if (primaryKey==null) {
+                if (primaryKey == null) {
                     primaryKey =
                             new PrimaryKey(tableCatalog, tableSchema, tableName, primaryKeyName);
                 }
@@ -404,7 +405,7 @@ public class Table implements Comparable<Table> {
 
         } finally {
             try {
-                if (rs!=null && !rs.isClosed()) {
+                if (rs != null && !rs.isClosed()) {
                     rs.close();
                 }
             } catch (Exception ignore) {
@@ -417,11 +418,11 @@ public class Table implements Comparable<Table> {
     public int compareTo(Table o) {
         int compareTo = tableCatalog.compareToIgnoreCase(o.tableCatalog);
 
-        if (compareTo==0) {
+        if (compareTo == 0) {
             compareTo = tableSchema.compareToIgnoreCase(o.tableSchema);
         }
 
-        if (compareTo==0) {
+        if (compareTo == 0) {
             compareTo = tableName.compareToIgnoreCase(o.tableName);
         }
 
@@ -446,5 +447,73 @@ public class Table implements Comparable<Table> {
 
     public Index get(String indexName) {
         return indices.get(indexName.toUpperCase());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Table)) {
+            return false;
+        }
+
+        Table table = (Table) o;
+
+        if (!Objects.equals(tableCatalog, table.tableCatalog)) {
+            return false;
+        }
+        if (!Objects.equals(tableSchema, table.tableSchema)) {
+            return false;
+        }
+        if (!tableName.equals(table.tableName)) {
+            return false;
+        }
+        if (!tableType.equals(table.tableType)) {
+            return false;
+        }
+        if (!Objects.equals(remarks, table.remarks)) {
+            return false;
+        }
+        if (!Objects.equals(typeCatalog, table.typeCatalog)) {
+            return false;
+        }
+        if (!Objects.equals(typeSchema, table.typeSchema)) {
+            return false;
+        }
+        if (!Objects.equals(typeName, table.typeName)) {
+            return false;
+        }
+        if (!Objects.equals(selfReferenceColName, table.selfReferenceColName)) {
+            return false;
+        }
+        if (!Objects.equals(referenceGeneration, table.referenceGeneration)) {
+            return false;
+        }
+        if (!columns.equals(table.columns)) {
+            return false;
+        }
+        if (!Objects.equals(indices, table.indices)) {
+            return false;
+        }
+        return Objects.equals(primaryKey, table.primaryKey);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = tableCatalog != null ? tableCatalog.hashCode() : 0;
+        result = 31 * result + (tableSchema != null ? tableSchema.hashCode() : 0);
+        result = 31 * result + tableName.hashCode();
+        result = 31 * result + tableType.hashCode();
+        result = 31 * result + (remarks != null ? remarks.hashCode() : 0);
+        result = 31 * result + (typeCatalog != null ? typeCatalog.hashCode() : 0);
+        result = 31 * result + (typeSchema != null ? typeSchema.hashCode() : 0);
+        result = 31 * result + (typeName != null ? typeName.hashCode() : 0);
+        result = 31 * result + (selfReferenceColName != null ? selfReferenceColName.hashCode() : 0);
+        result = 31 * result + (referenceGeneration != null ? referenceGeneration.hashCode() : 0);
+        result = 31 * result + columns.hashCode();
+        result = 31 * result + (indices != null ? indices.hashCode() : 0);
+        result = 31 * result + (primaryKey != null ? primaryKey.hashCode() : 0);
+        return result;
     }
 }

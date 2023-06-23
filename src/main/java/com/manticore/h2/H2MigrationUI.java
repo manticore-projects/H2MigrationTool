@@ -93,7 +93,7 @@ public class H2MigrationUI extends JFrame {
                     int[] selectedIndices = databaseFileList.getSelectedIndices();
                     int result = JOptionPane.NO_OPTION;
 
-                    if (databaseFileList.getModel().getSize() > 0 && selectedIndices.length==0) {
+                    if (databaseFileList.getModel().getSize() > 0 && selectedIndices.length == 0) {
                         result =
                                 JOptionPane.showConfirmDialog(
                                         H2MigrationUI.this,
@@ -114,8 +114,7 @@ public class H2MigrationUI extends JFrame {
                                         DIALOG_QUESTION_64_ICON);
                     }
 
-                    if (result==JOptionPane.YES_OPTION) {
-                        ArrayList<String> messages = new ArrayList<>();
+                    if (result == JOptionPane.YES_OPTION) {
                         final JTextArea textArea = new JTextArea(24, 72);
                         textArea.setFont(MONOSPACED_FONT);
 
@@ -211,7 +210,7 @@ public class H2MigrationUI extends JFrame {
                     int[] selectedIndices = databaseFileList.getSelectedIndices();
                     int result = JOptionPane.NO_OPTION;
 
-                    if (databaseFileList.getModel().getSize() > 0 && selectedIndices.length==0) {
+                    if (databaseFileList.getModel().getSize() > 0 && selectedIndices.length == 0) {
                         result =
                                 JOptionPane.showConfirmDialog(
                                         H2MigrationUI.this,
@@ -232,8 +231,7 @@ public class H2MigrationUI extends JFrame {
                                         DIALOG_QUESTION_64_ICON);
                     }
 
-                    if (result==JOptionPane.YES_OPTION) {
-                        ArrayList<String> messages = new ArrayList<>();
+                    if (result == JOptionPane.YES_OPTION) {
                         final JTextArea textArea = new JTextArea(24, 72);
                         textArea.setFont(MONOSPACED_FONT);
 
@@ -270,26 +268,27 @@ public class H2MigrationUI extends JFrame {
                                         for (final File f : databaseFiles) {
                                             try {
                                                 String versionFrom =
-                                                        from!=null ? from.getVersion():"";
+                                                        from != null ? from.getVersion() : "";
                                                 String versionTo =
-                                                        to!=null ? to.getVersion():"";
+                                                        to != null ? to.getVersion() : "";
 
                                                 String username = usernameField.getText();
                                                 String password = passwordField.getText();
 
                                                 String upgradeOptions =
                                                         quirksModeBox.isSelected() ? "QUIRKS_MODE"
-                                                                                   :"";
+                                                                : "";
                                                 if (varbinaryBox.isSelected()) {
                                                     upgradeOptions +=
                                                             upgradeOptions.isEmpty()
-                                                            ? "VARIABLE_BINARY"
-                                                            :" VARIABLE_BINARY";
+                                                                    ? "VARIABLE_BINARY"
+                                                                    : " VARIABLE_BINARY";
                                                 }
 
                                                 String compression =
                                                         (String) compressionBox.getSelectedItem();
-                                                if (compression!=null && compression.length() > 0) {
+                                                if (compression != null
+                                                        && compression.length() > 0) {
                                                     compression = "COMPRESSION " + compression;
                                                 }
 
@@ -382,7 +381,7 @@ public class H2MigrationUI extends JFrame {
                     int[] selectedIndices = databaseFileList.getSelectedIndices();
                     int result = JOptionPane.NO_OPTION;
 
-                    if (databaseFileList.getModel().getSize() > 0 && selectedIndices.length==0) {
+                    if (databaseFileList.getModel().getSize() > 0 && selectedIndices.length == 0) {
                         result =
                                 JOptionPane.showConfirmDialog(
                                         H2MigrationUI.this,
@@ -403,7 +402,7 @@ public class H2MigrationUI extends JFrame {
                                         DIALOG_QUESTION_64_ICON);
                     }
 
-                    if (result==JOptionPane.YES_OPTION) {
+                    if (result == JOptionPane.YES_OPTION) {
                         TreeMap<File, Collection<Recommendation>> recommendations = new TreeMap<>();
                         SwingWorker worker =
                                 new SwingWorker() {
@@ -438,7 +437,7 @@ public class H2MigrationUI extends JFrame {
                                             try (Connection con = driver
                                                     .connect("jdbc:h2:" + fileName, properties)) {
                                                 Collection<Recommendation> r =
-                                                        MetaDataTools.verifyDecinmalPrecision(con);
+                                                        MetaDataTools.verifyDecimalPrecision(con);
                                                 if (!r.isEmpty()) {
                                                     if (!recommendations.containsKey(f)) {
                                                         recommendations.put(f, r);
@@ -485,9 +484,9 @@ public class H2MigrationUI extends JFrame {
     private final JList<DriverRecord> fromVersionList = new JList<>();
     private final JList<DriverRecord> toVersionList = new JList<>();
     private final JComboBox<String> compressionBox =
-            new JComboBox<>(new String[]{"", "ZIP", "GZIP"});
+            new JComboBox<>(new String[] {"", "ZIP", "GZIP"});
     private final JComboBox<String> repairModeBox =
-            new JComboBox<>(new String[]{"", "REPAIR", "WORK-AROUND"});
+            new JComboBox<>(new String[] {"", "REPAIR", "WORK-AROUND"});
     private final JCheckBox varbinaryBox = new JCheckBox("Convert BINARY to VARBINARY", false);
     private final JCheckBox quirksModeBox = new JCheckBox("Quirks Mode", true);
     private final JCheckBox overwriteBox = new JCheckBox("Overwrite", false);
@@ -508,9 +507,9 @@ public class H2MigrationUI extends JFrame {
 
                     int result = fileChooser.showOpenDialog(H2MigrationUI.this);
 
-                    if (JFileChooser.APPROVE_OPTION==result) {
+                    if (JFileChooser.APPROVE_OPTION == result) {
                         File[] selectedFiles = fileChooser.getSelectedFiles();
-                        if (selectedFiles.length==0) {
+                        if (selectedFiles.length == 0) {
                             File selectedFile = fileChooser.getSelectedFile();
 
                             if (selectedFile.isDirectory()) {
@@ -577,9 +576,9 @@ public class H2MigrationUI extends JFrame {
 
                     int result = fileChooser.showOpenDialog(H2MigrationUI.this);
 
-                    if (JFileChooser.APPROVE_OPTION==result) {
+                    if (JFileChooser.APPROVE_OPTION == result) {
                         File[] selectedFiles = fileChooser.getSelectedFiles();
-                        if (selectedFiles.length==0) {
+                        if (selectedFiles.length == 0) {
                             File selectedFile = fileChooser.getSelectedFile();
 
                             if (selectedFile.isDirectory()) {
@@ -639,7 +638,7 @@ public class H2MigrationUI extends JFrame {
                     }
 
                     listModel.clear();
-                    listModel.addAll(H2MigrationTool.DRIVER_RECORDS);
+                    listModel.addAll(H2MigrationTool.getDriverRecords());
                 }
             };
     private final Action helpAction =
@@ -695,14 +694,9 @@ public class H2MigrationUI extends JFrame {
         dialog.setVisible(true);
     }
 
-    public static void executeAndWait(SwingWorker worker, Component component, JTextArea textArea) {
+    public static void executeAndWait(SwingWorker<?, ?> worker, Component component,
+            JTextArea textArea) {
         Window windowAncestor = SwingUtilities.getWindowAncestor(component);
-        JOptionPane p =
-                new JOptionPane(
-                        new JScrollPane(textArea),
-                        JOptionPane.INFORMATION_MESSAGE,
-                        JOptionPane.DEFAULT_OPTION,
-                        DIALOG_INFORMATION_64_ICON);
 
         JDialog dialog =
                 new JDialog(windowAncestor, "Operation in progress",
@@ -768,7 +762,7 @@ public class H2MigrationUI extends JFrame {
                     @Override
                     public void propertyChange(PropertyChangeEvent event) {
                         if ("state".equals(event.getPropertyName())
-                                && SwingWorker.StateValue.DONE==event.getNewValue()) {
+                                && SwingWorker.StateValue.DONE == event.getNewValue()) {
                             closeAction.setEnabled(true);
                             cancelAction.setEnabled(false);
                             dialog.setCursor(Cursor.getDefaultCursor());
@@ -780,7 +774,7 @@ public class H2MigrationUI extends JFrame {
         dialog.setVisible(true);
     }
 
-    public static void executeAndWait(SwingWorker worker, Component component) {
+    public static void executeAndWait(SwingWorker<?, ?> worker, Component component) {
         Window windowAncestor = SwingUtilities.getWindowAncestor(component);
         JOptionPane p =
                 new JOptionPane(
@@ -832,7 +826,7 @@ public class H2MigrationUI extends JFrame {
                 "<html>"
                         + "<p>Migrate existing H2 databases to a newer H2 Version:</p>"
                         + "<ol>"
-                        + "<li>Select the <b>H2 Datbase Files</b> (single H2 DB file or a directory)</li>"
+                        + "<li>Select the <b>H2 Database Files</b> (single H2 DB file or a directory)</li>"
                         + "<li>Select the  <b>Version FROM</b> and <b>Version TO</b></li>"
                         + "<li>Start <b>Migrate</b></li>"
                         + "</ol>"
@@ -848,15 +842,15 @@ public class H2MigrationUI extends JFrame {
         databaseFileList.setPrototypeCellValue(new File(String.copyValueOf(new char[255])));
 
         listModel.clear();
-        listModel.addAll(H2MigrationTool.DRIVER_RECORDS);
+        listModel.addAll(H2MigrationTool.getDriverRecords());
 
         fromVersionList.setModel(listModel);
         fromVersionList.setSelectedValue(
-                H2MigrationTool.getDriverRecord(H2MigrationTool.DRIVER_RECORDS, 1, 4), true);
+                H2MigrationTool.getDriverRecord(H2MigrationTool.getDriverRecords(), 1, 4), true);
 
         toVersionList.setModel(listModel);
         toVersionList.setSelectedValue(
-                H2MigrationTool.getDriverRecord(H2MigrationTool.DRIVER_RECORDS, 2, 0), true);
+                H2MigrationTool.getDriverRecord(H2MigrationTool.getDriverRecords(), 2, 0), true);
 
         compressionBox.setSelectedIndex(1);
 
@@ -1096,7 +1090,7 @@ public class H2MigrationUI extends JFrame {
 
         public void propertyChange(PropertyChangeEvent event) {
             if ("state".equals(event.getPropertyName())
-                    && SwingWorker.StateValue.DONE==event.getNewValue()) {
+                    && SwingWorker.StateValue.DONE == event.getNewValue()) {
                 dialog.setCursor(Cursor.getDefaultCursor());
                 dialog.setVisible(false);
                 dialog.dispose();

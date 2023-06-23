@@ -15,6 +15,7 @@
 package com.manticore.h2;
 
 import java.util.LinkedList;
+import java.util.Objects;
 
 /**
  * @author Andreas Reichel <andreas@manticore-projects.com>
@@ -36,8 +37,8 @@ public class Reference {
     LinkedList<String[]> columns = new LinkedList<>();
 
     public Reference(String pkTableCatalog, String pkTableSchema, String pkTableName,
-                     String fkTableCatalog, String fkTableSchema, String fkTableName, Short updateRule,
-                     Short deleteRule, String fkName, String pkName, Short deferrability) {
+            String fkTableCatalog, String fkTableSchema, String fkTableName, Short updateRule,
+            Short deleteRule, String fkName, String pkName, Short deferrability) {
         this.pkTableCatalog = pkTableCatalog;
         this.pkTableSchema = pkTableSchema;
         this.pkTableName = pkTableName;
@@ -51,4 +52,67 @@ public class Reference {
         this.deferrability = deferrability;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Reference)) {
+            return false;
+        }
+
+        Reference reference = (Reference) o;
+
+        if (!Objects.equals(pkTableCatalog, reference.pkTableCatalog)) {
+            return false;
+        }
+        if (!Objects.equals(pkTableSchema, reference.pkTableSchema)) {
+            return false;
+        }
+        if (!pkTableName.equals(reference.pkTableName)) {
+            return false;
+        }
+        if (!Objects.equals(fkTableCatalog, reference.fkTableCatalog)) {
+            return false;
+        }
+        if (!Objects.equals(fkTableSchema, reference.fkTableSchema)) {
+            return false;
+        }
+        if (!fkTableName.equals(reference.fkTableName)) {
+            return false;
+        }
+        if (!Objects.equals(updateRule, reference.updateRule)) {
+            return false;
+        }
+        if (!Objects.equals(deleteRule, reference.deleteRule)) {
+            return false;
+        }
+        if (!fkName.equals(reference.fkName)) {
+            return false;
+        }
+        if (!pkName.equals(reference.pkName)) {
+            return false;
+        }
+        if (!Objects.equals(deferrability, reference.deferrability)) {
+            return false;
+        }
+        return Objects.equals(columns, reference.columns);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = pkTableCatalog != null ? pkTableCatalog.hashCode() : 0;
+        result = 31 * result + (pkTableSchema != null ? pkTableSchema.hashCode() : 0);
+        result = 31 * result + pkTableName.hashCode();
+        result = 31 * result + (fkTableCatalog != null ? fkTableCatalog.hashCode() : 0);
+        result = 31 * result + (fkTableSchema != null ? fkTableSchema.hashCode() : 0);
+        result = 31 * result + fkTableName.hashCode();
+        result = 31 * result + (updateRule != null ? updateRule.hashCode() : 0);
+        result = 31 * result + (deleteRule != null ? deleteRule.hashCode() : 0);
+        result = 31 * result + fkName.hashCode();
+        result = 31 * result + pkName.hashCode();
+        result = 31 * result + (deferrability != null ? deferrability.hashCode() : 0);
+        result = 31 * result + (columns != null ? columns.hashCode() : 0);
+        return result;
+    }
 }

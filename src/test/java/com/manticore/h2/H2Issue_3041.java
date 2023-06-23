@@ -47,7 +47,7 @@ public class H2Issue_3041 {
 
         ExecutorService executor = Executors.newFixedThreadPool(8);
         try (Connection connection = driver.connect(CONNECTION_URL, properties);
-             Statement st = connection.createStatement()) {
+                Statement st = connection.createStatement()) {
 
             try {
                 st.executeUpdate(
@@ -80,11 +80,11 @@ public class H2Issue_3041 {
                         public void run() {
                             for (int i = 0; i < 10000; i++) {
                                 try (ResultSet rs =
-                                             st.executeQuery(
-                                                     "WITH TMP_EXAMPLE_"
-                                                             + i
-                                                             + "  as (SELECT avg(SIMPLE_VALUE) AVG_SIMPLE_VALUE FROM public.EXAMPLE_0)  SELECT * FROM TMP_EXAMPLE_"
-                                                             + i)) {
+                                        st.executeQuery(
+                                                "WITH TMP_EXAMPLE_"
+                                                        + i
+                                                        + "  as (SELECT avg(SIMPLE_VALUE) AVG_SIMPLE_VALUE FROM public.EXAMPLE_0)  SELECT * FROM TMP_EXAMPLE_"
+                                                        + i)) {
 
                                 } catch (SQLException ex) {
                                     LOGGER.log(Level.SEVERE, "Statement failed on i=" + i, ex);

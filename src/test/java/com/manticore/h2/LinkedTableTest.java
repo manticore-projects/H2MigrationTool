@@ -68,7 +68,7 @@ public class LinkedTableTest {
         }
 
         try (Connection con = DriverManager.getConnection(connectionStr, PROPERTIES);
-             Statement st = con.createStatement()) {
+                Statement st = con.createStatement()) {
             st.executeUpdate("CREATE SCHEMA common;");
             st.executeUpdate(
                     "CREATE TABLE common.test (id VARCHAR(40) NOT NULL PRIMARY KEY, field1 VARCHAR(40))");
@@ -82,7 +82,7 @@ public class LinkedTableTest {
 
     @AfterAll
     public static void tearDown() throws Exception {
-        if (server!=null) {
+        if (server != null) {
             server.stop();
         }
 
@@ -102,7 +102,7 @@ public class LinkedTableTest {
                         + "_1;IFEXISTS=FALSE;COMPRESS=TRUE;PAGE_SIZE=128;DB_CLOSE_DELAY=0;AUTO_RECONNECT=FALSE;CACHE_SIZE=8192;MODE=Oracle;LOCK_TIMEOUT=10";
 
         try (Connection con = DriverManager.getConnection(linkedConnectionStr, PROPERTIES);
-             Statement st = con.createStatement()) {
+                Statement st = con.createStatement()) {
             st.executeUpdate("CREATE SCHEMA common;");
             st.executeUpdate(
                     "CREATE TABLE common.test (id VARCHAR(40) NOT NULL PRIMARY KEY, field1 VARCHAR(40))");
@@ -129,7 +129,7 @@ public class LinkedTableTest {
         Thread.sleep(5000);
 
         try (Connection con = DriverManager.getConnection(linkedConnectionStr, PROPERTIES);
-             Statement st = con.createStatement()) {
+                Statement st = con.createStatement()) {
             st.executeUpdate(
                     "CREATE LINKED TABLE \n"
                             + "IF NOT EXISTS \n"
@@ -155,7 +155,7 @@ public class LinkedTableTest {
         Thread.sleep(5000);
 
         try (Connection con = DriverManager.getConnection(linkedConnectionStr, PROPERTIES);
-             Statement st = con.createStatement()) {
+                Statement st = con.createStatement()) {
             st.executeUpdate(
                     "CREATE LINKED TABLE \n"
                             + "IF NOT EXISTS \n"

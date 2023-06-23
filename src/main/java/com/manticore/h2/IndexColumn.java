@@ -14,6 +14,8 @@
  */
 package com.manticore.h2;
 
+import java.util.Objects;
+
 /**
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
@@ -27,7 +29,7 @@ public class IndexColumn implements Comparable<IndexColumn> {
     String filterCondition;
 
     public IndexColumn(Short ordinalPosition, String columnName, String ascOrDesc, Long cardinality,
-                       Long pages, String filterCondition) {
+            Long pages, String filterCondition) {
         this.ordinalPosition = ordinalPosition;
         this.columnName = columnName;
         this.ascOrDesc = ascOrDesc;
@@ -39,5 +41,45 @@ public class IndexColumn implements Comparable<IndexColumn> {
     @Override
     public int compareTo(IndexColumn o) {
         return ordinalPosition.compareTo(o.ordinalPosition);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof IndexColumn)) {
+            return false;
+        }
+
+        IndexColumn that = (IndexColumn) o;
+
+        if (!ordinalPosition.equals(that.ordinalPosition)) {
+            return false;
+        }
+        if (!columnName.equals(that.columnName)) {
+            return false;
+        }
+        if (!Objects.equals(ascOrDesc, that.ascOrDesc)) {
+            return false;
+        }
+        if (!Objects.equals(cardinality, that.cardinality)) {
+            return false;
+        }
+        if (!Objects.equals(pages, that.pages)) {
+            return false;
+        }
+        return Objects.equals(filterCondition, that.filterCondition);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = ordinalPosition.hashCode();
+        result = 31 * result + columnName.hashCode();
+        result = 31 * result + (ascOrDesc != null ? ascOrDesc.hashCode() : 0);
+        result = 31 * result + (cardinality != null ? cardinality.hashCode() : 0);
+        result = 31 * result + (pages != null ? pages.hashCode() : 0);
+        result = 31 * result + (filterCondition != null ? filterCondition.hashCode() : 0);
+        return result;
     }
 }

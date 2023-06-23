@@ -14,6 +14,7 @@
  */
 package com.manticore.h2;
 
+import java.util.Objects;
 import java.util.TreeMap;
 
 /**
@@ -32,8 +33,8 @@ public class Index {
     TreeMap<Short, IndexColumn> columns = new TreeMap<>();
 
     public Index(String tableCatalog, String tableSchema, String tableName, Boolean nonUnique,
-                 String indexQualifier,
-                 String indexName, Short type) {
+            String indexQualifier,
+            String indexName, Short type) {
         this.tableCatalog = tableCatalog;
         this.tableSchema = tableSchema;
         this.tableName = tableName;
@@ -44,11 +45,58 @@ public class Index {
     }
 
     public IndexColumn put(Short ordinalPosition, String columnName, String ascOrDesc,
-                           Long cardinality,
-                           Long pages, String filterCondition) {
+            Long cardinality,
+            Long pages, String filterCondition) {
         IndexColumn column = new IndexColumn(ordinalPosition, columnName, ascOrDesc, cardinality,
                 pages, filterCondition);
         return columns.put(ordinalPosition, column);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Index)) {
+            return false;
+        }
+
+        Index index = (Index) o;
+
+        if (!Objects.equals(tableCatalog, index.tableCatalog)) {
+            return false;
+        }
+        if (!Objects.equals(tableSchema, index.tableSchema)) {
+            return false;
+        }
+        if (!tableName.equals(index.tableName)) {
+            return false;
+        }
+        if (!nonUnique.equals(index.nonUnique)) {
+            return false;
+        }
+        if (!indexQualifier.equals(index.indexQualifier)) {
+            return false;
+        }
+        if (!indexName.equals(index.indexName)) {
+            return false;
+        }
+        if (!type.equals(index.type)) {
+            return false;
+        }
+        return columns.equals(index.columns);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = tableCatalog != null ? tableCatalog.hashCode() : 0;
+        result = 31 * result + (tableSchema != null ? tableSchema.hashCode() : 0);
+        result = 31 * result + tableName.hashCode();
+        result = 31 * result + nonUnique.hashCode();
+        result = 31 * result + indexQualifier.hashCode();
+        result = 31 * result + indexName.hashCode();
+        result = 31 * result + type.hashCode();
+        result = 31 * result + columns.hashCode();
+        return result;
+    }
 }

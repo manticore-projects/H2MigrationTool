@@ -15,6 +15,7 @@
 package com.manticore.h2;
 
 import java.util.LinkedList;
+import java.util.Objects;
 
 /**
  * @author Andreas Reichel <andreas@manticore-projects.com>
@@ -29,10 +30,46 @@ public class PrimaryKey {
     LinkedList<String> columnNames = new LinkedList<>();
 
     public PrimaryKey(String tableCatalog, String tableSchema, String tableName,
-                      String primaryKeyName) {
+            String primaryKeyName) {
         this.tableCatalog = tableCatalog;
         this.tableSchema = tableSchema;
         this.tableName = tableName;
         this.primaryKeyName = primaryKeyName;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof PrimaryKey)) {
+            return false;
+        }
+
+        PrimaryKey that = (PrimaryKey) o;
+
+        if (!Objects.equals(tableCatalog, that.tableCatalog)) {
+            return false;
+        }
+        if (!Objects.equals(tableSchema, that.tableSchema)) {
+            return false;
+        }
+        if (!tableName.equals(that.tableName)) {
+            return false;
+        }
+        if (!primaryKeyName.equals(that.primaryKeyName)) {
+            return false;
+        }
+        return columnNames.equals(that.columnNames);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = tableCatalog != null ? tableCatalog.hashCode() : 0;
+        result = 31 * result + (tableSchema != null ? tableSchema.hashCode() : 0);
+        result = 31 * result + tableName.hashCode();
+        result = 31 * result + primaryKeyName.hashCode();
+        result = 31 * result + columnNames.hashCode();
+        return result;
     }
 }

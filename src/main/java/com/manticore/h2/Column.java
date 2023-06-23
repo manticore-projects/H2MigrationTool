@@ -14,6 +14,8 @@
  */
 package com.manticore.h2;
 
+import java.util.Objects;
+
 /**
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
@@ -89,26 +91,26 @@ public class Column implements Comparable<Column> {
     @Override
     public int compareTo(Column o) {
         int compareTo =
-                tableCatalog==null && o.tableCatalog==null
-                ? 0
-                :tableCatalog!=null
-                 ? tableCatalog.compareToIgnoreCase(o.tableCatalog)
-                 :-o.tableCatalog.compareToIgnoreCase(tableCatalog);
+                tableCatalog == null && o.tableCatalog == null
+                        ? 0
+                        : tableCatalog != null
+                                ? tableCatalog.compareToIgnoreCase(o.tableCatalog)
+                                : -o.tableCatalog.compareToIgnoreCase(tableCatalog);
 
-        if (compareTo==0) {
+        if (compareTo == 0) {
             compareTo =
-                    tableSchema==null && o.tableSchema==null
-                    ? 0
-                    :tableSchema!=null
-                     ? tableSchema.compareToIgnoreCase(o.tableSchema)
-                     :-o.tableSchema.compareToIgnoreCase(tableSchema);
+                    tableSchema == null && o.tableSchema == null
+                            ? 0
+                            : tableSchema != null
+                                    ? tableSchema.compareToIgnoreCase(o.tableSchema)
+                                    : -o.tableSchema.compareToIgnoreCase(tableSchema);
         }
 
-        if (compareTo==0) {
+        if (compareTo == 0) {
             compareTo = tableName.compareToIgnoreCase(o.tableName);
         }
 
-        if (compareTo==0) {
+        if (compareTo == 0) {
             compareTo = ordinalPosition.compareTo(o.ordinalPosition);
         }
 
@@ -121,5 +123,104 @@ public class Column implements Comparable<Column> {
                 + typeName + " (" + columnSize + ", " + decimalDigits + ")";
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Column)) {
+            return false;
+        }
 
+        Column column = (Column) o;
+
+        if (!Objects.equals(tableCatalog, column.tableCatalog)) {
+            return false;
+        }
+        if (!Objects.equals(tableSchema, column.tableSchema)) {
+            return false;
+        }
+        if (!tableName.equals(column.tableName)) {
+            return false;
+        }
+        if (!columnName.equals(column.columnName)) {
+            return false;
+        }
+        if (!dataType.equals(column.dataType)) {
+            return false;
+        }
+        if (!Objects.equals(typeName, column.typeName)) {
+            return false;
+        }
+        if (!columnSize.equals(column.columnSize)) {
+            return false;
+        }
+        if (!Objects.equals(decimalDigits, column.decimalDigits)) {
+            return false;
+        }
+        if (!Objects.equals(numericPrecisionRadix, column.numericPrecisionRadix)) {
+            return false;
+        }
+        if (!Objects.equals(nullable, column.nullable)) {
+            return false;
+        }
+        if (!Objects.equals(remarks, column.remarks)) {
+            return false;
+        }
+        if (!Objects.equals(columnDefinition, column.columnDefinition)) {
+            return false;
+        }
+        if (!Objects.equals(characterOctetLength, column.characterOctetLength)) {
+            return false;
+        }
+        if (!Objects.equals(ordinalPosition, column.ordinalPosition)) {
+            return false;
+        }
+        if (!Objects.equals(isNullable, column.isNullable)) {
+            return false;
+        }
+        if (!Objects.equals(scopeCatalog, column.scopeCatalog)) {
+            return false;
+        }
+        if (!Objects.equals(scopeSchema, column.scopeSchema)) {
+            return false;
+        }
+        if (!Objects.equals(scopeTable, column.scopeTable)) {
+            return false;
+        }
+        if (!Objects.equals(sourceDataType, column.sourceDataType)) {
+            return false;
+        }
+        if (!Objects.equals(isAutomaticIncrement, column.isAutomaticIncrement)) {
+            return false;
+        }
+        return Objects.equals(isGeneratedColumn, column.isGeneratedColumn);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = tableCatalog != null ? tableCatalog.hashCode() : 0;
+        result = 31 * result + (tableSchema != null ? tableSchema.hashCode() : 0);
+        result = 31 * result + tableName.hashCode();
+        result = 31 * result + columnName.hashCode();
+        result = 31 * result + dataType.hashCode();
+        result = 31 * result + (typeName != null ? typeName.hashCode() : 0);
+        result = 31 * result + columnSize.hashCode();
+        result = 31 * result + (decimalDigits != null ? decimalDigits.hashCode() : 0);
+        result = 31 * result
+                + (numericPrecisionRadix != null ? numericPrecisionRadix.hashCode() : 0);
+        result = 31 * result + (nullable != null ? nullable.hashCode() : 0);
+        result = 31 * result + (remarks != null ? remarks.hashCode() : 0);
+        result = 31 * result + (columnDefinition != null ? columnDefinition.hashCode() : 0);
+        result = 31 * result + (characterOctetLength != null ? characterOctetLength.hashCode() : 0);
+        result = 31 * result + (ordinalPosition != null ? ordinalPosition.hashCode() : 0);
+        result = 31 * result + (isNullable != null ? isNullable.hashCode() : 0);
+        result = 31 * result + (scopeCatalog != null ? scopeCatalog.hashCode() : 0);
+        result = 31 * result + (scopeSchema != null ? scopeSchema.hashCode() : 0);
+        result = 31 * result + (scopeTable != null ? scopeTable.hashCode() : 0);
+        result = 31 * result + (sourceDataType != null ? sourceDataType.hashCode() : 0);
+        result = 31 * result + (isAutomaticIncrement != null ? isAutomaticIncrement.hashCode() : 0);
+        result = 31 * result + (isGeneratedColumn != null ? isGeneratedColumn.hashCode() : 0);
+        return result;
+    }
 }

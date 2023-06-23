@@ -40,9 +40,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.Driver;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -53,6 +56,7 @@ import java.util.List;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -70,7 +74,11 @@ public class H2MigrationTool {
     public static final Pattern VERSION_PATTERN = Pattern
             .compile("([0-9]+)\\.([0-9]+)\\.([0-9]+)(-([a-z0-9]{9}))?", Pattern.CASE_INSENSITIVE);
 
-    public static final TreeSet<DriverRecord> DRIVER_RECORDS = new TreeSet<>();
+    private static final TreeSet<DriverRecord> DRIVER_RECORDS = new TreeSet<>();
+
+    public static Set<DriverRecord> getDriverRecords() {
+        return Collections.unmodifiableSet(DRIVER_RECORDS);
+    }
 
     public final static javax.swing.filechooser.FileFilter H2_DATABASE_FILE_FILTER =
             new javax.swing.filechooser.FileFilter() {
@@ -118,7 +126,8 @@ public class H2MigrationTool {
         String homePath = new File(System.getProperty("user.home")).toURI().getPath();
 
         String modifiedFilename = filename.replaceFirst("~", Matcher.quoteReplacement(homePath));
-        modifiedFilename = modifiedFilename.replaceFirst("\\$\\{user.home}", Matcher.quoteReplacement(homePath));
+        modifiedFilename = modifiedFilename.replaceFirst("\\$\\{user.home}",
+                Matcher.quoteReplacement(homePath));
 
         File f = new File(modifiedFilename);
 
@@ -137,7 +146,7 @@ public class H2MigrationTool {
     }
 
     public static Collection<Path> findFilesInPathRecursively(Path parentPath, int depth,
-                                                              String prefix, String suffix) throws IOException {
+            String prefix, String suffix) throws IOException {
         ArrayList<Path> fileNames = new ArrayList<>();
         try (Stream<Path> paths = Files.find(parentPath, depth, (path, attr) -> {
             if (attr.isRegularFile()) {
@@ -153,7 +162,7 @@ public class H2MigrationTool {
     }
 
     public static Collection<Path> findFilesInPathRecursively(Path parentPath, int depth,
-                                                              FileFilter... fileFilters) throws IOException {
+            FileFilter... fileFilters) throws IOException {
         ArrayList<Path> fileNames = new ArrayList<>();
         try (Stream<Path> paths = Files.find(parentPath, depth, (path, attr) -> {
             if (attr.isRegularFile()) {
@@ -204,10 +213,11 @@ public class H2MigrationTool {
         Path myPath;
         FileSystem fileSystem = null;
 
-        if (resourceName!=null && resourceName.length() > 0) {
+        if (resourceName != null && resourceName.length() > 0) {
             myPath = new File(resourceName).toPath();
         } else {
             URL resourceUrl = H2MigrationTool.class.getResource("/drivers");
+            assert resourceUrl != null;
             URI resourceUri = resourceUrl.toURI();
             if (resourceUri.getScheme().equals("jar")) {
                 fileSystem = FileSystems.newFileSystem(resourceUri,
@@ -218,9 +228,8 @@ public class H2MigrationTool {
             }
         }
 
-        LOGGER.info(myPath.toString());
         for (Path path : findFilesInPathRecursively(myPath, 1, "h2", ".bin")) {
-            LOGGER.info("Found H2 library " + path.getFileName().toString());
+            LOGGER.info("Found H2 library " + path);
             try {
                 URI resourceUri = path.toUri();
                 URL url = path.toUri().toURL();
@@ -229,8 +238,7 @@ public class H2MigrationTool {
                 // so we have to extract a local copy first
                 // investigate, if the is a better solution, e. g. a special ClassLoader
                 if (resourceUri.getScheme().equals("jar")) {
-                    String fileName = path.getFileName().toString();
-
+                    String fileName = url.getFile();
                     File tmpFile = new File(System.getProperty("java.io.tmpdir"), fileName);
                     tmpFile.deleteOnExit();
 
@@ -239,105 +247,74 @@ public class H2MigrationTool {
 
                     url = tmpFile.toURI().toURL();
                 }
-
-                LOGGER.fine("Load JAR file from: " + url.toExternalForm());
-                URLClassLoader loader =
-                        new URLClassLoader(new URL[]{url}, H2MigrationTool.class.getClassLoader());
-
-                Class classToLoad = Class.forName("org.h2.Driver", true, loader);
-
-                Method method = classToLoad.getDeclaredMethod("load");
-                Object instance = classToLoad.newInstance();
-                Driver driver = (java.sql.Driver) method.invoke(instance);
-                getDriverFromInstance(loader, instance);
-
-                Properties properties = new Properties();
-                properties.setProperty("user", "sa");
-                properties.setProperty("password", "");
-
-                Connection connection = driver.connect("jdbc:h2:mem:test", properties);
-                DatabaseMetaData metaData = connection.getMetaData();
-
-                // String driverVersion = metaData.getDriverVersion();
-
-                Matcher matcher = VERSION_PATTERN.matcher(path.getFileName().toString());
-                if (matcher.find()) {
-                    int majorVersion = Integer.valueOf(matcher.group(1));
-                    int minorVersion = Integer.valueOf(matcher.group(2));
-                    int patchId = Integer.valueOf(matcher.group(3));
-                    String buildId = matcher.groupCount()==5 ? matcher.group(5):"";
-
-                    DriverRecord driverRecord =
-                            new DriverRecord(majorVersion, minorVersion, patchId, buildId, url);
-                    DRIVER_RECORDS.add(driverRecord);
-
-                    LOGGER.info(driverRecord.toString());
-                }
-
-                connection.close();
-                loader.close();
-            } catch (Exception ex) {
+                readDriverRecord(url);
+            } catch (RuntimeException ex) {
                 LOGGER.log(Level.SEVERE,
-                        "Failed to load the driver " + path.getFileName().toString(), ex);
+                        "Failed to load the driver " + path, ex);
             }
         }
 
         LOGGER.fine("Driver Records loaded: " + DRIVER_RECORDS.size());
 
-        if (fileSystem!=null) {
+        if (fileSystem != null) {
             fileSystem.close();
         }
 
-        return DRIVER_RECORDS;
+        return new TreeSet<>(DRIVER_RECORDS);
     }
 
-    public static TreeSet<DriverRecord> readDriverRecord(Path path) throws Exception {
+    public static void readDriverRecord(Path path) {
+        if (path != null) {
+            try {
+                URL url = path.toUri().toURL();
+                readDriverRecord(url);
+            } catch (Exception ex) {
+                LOGGER.log(Level.SEVERE,
+                        "Failed to load the driver " + path, ex);
+            }
+        }
+    }
+
+    public static void readDriverRecord(final URL url) {
         try {
-            URL url = path.toUri().toURL();
-
-            LOGGER.fine("Load JAR file from: " + url.toExternalForm());
-            URLClassLoader loader =
-                    new URLClassLoader(new URL[]{url}, H2MigrationTool.class.getClassLoader());
-
-            Class classToLoad = Class.forName("org.h2.Driver", true, loader);
-
-            Method method = classToLoad.getDeclaredMethod("load");
-            Object instance = classToLoad.newInstance();
-            Driver driver = (java.sql.Driver) method.invoke(instance);
-            getDriverFromInstance(loader, instance);
-
+            LOGGER.fine("Load Driver from: " + url.toExternalForm());
             Properties properties = new Properties();
             properties.setProperty("user", "sa");
             properties.setProperty("password", "");
+            Connection connection =
+                    AccessController.doPrivileged((PrivilegedExceptionAction<Connection>) () -> {
+                        try (URLClassLoader loader = new URLClassLoader(new URL[] {url},
+                                H2MigrationTool.class.getClassLoader())) {
+                            Class<?> classToLoad = Class.forName("org.h2.Driver", true, loader);
+                            Method method = classToLoad.getDeclaredMethod("load");
+                            Object instance = classToLoad.getDeclaredConstructor().newInstance();
+                            method.invoke(instance);
 
-            Connection connection = driver.connect("jdbc:h2:mem:test", properties);
+                            Driver driver = getDriverFromInstance(loader, instance);
+                            return driver.connect("jdbc:h2:mem:test", properties);
+                        }
+                    });
 
-            Matcher matcher = VERSION_PATTERN.matcher(path.getFileName().toString());
+            Matcher matcher = VERSION_PATTERN.matcher(url.getFile());
             if (matcher.find()) {
-                int majorVersion = Integer.valueOf(matcher.group(1));
-                int minorVersion = Integer.valueOf(matcher.group(2));
-                int patchId = Integer.valueOf(matcher.group(3));
-                String buildId = matcher.groupCount()==5 ? matcher.group(5):"";
-
+                int majorVersion = Integer.parseInt(matcher.group(1));
+                int minorVersion = Integer.parseInt(matcher.group(2));
+                int patchId = Integer.parseInt(matcher.group(3));
+                String buildId = matcher.groupCount() == 5 ? matcher.group(5) : "";
                 DriverRecord driverRecord =
                         new DriverRecord(majorVersion, minorVersion, patchId, buildId, url);
                 DRIVER_RECORDS.add(driverRecord);
-
                 LOGGER.info(driverRecord.toString());
             }
-
             connection.close();
-            loader.close();
         } catch (Exception ex) {
-            LOGGER.log(Level.SEVERE, "Failed to load the driver " + path.toString(), ex);
+            LOGGER.log(Level.SEVERE, "Failed to load the driver " + url.toString(), ex);
         }
-        return DRIVER_RECORDS;
     }
 
     private static Driver getDriverFromInstance(ClassLoader loader, Object instance) {
         Driver driver = (Driver) instance;
-
-        if (driver.getMajorVersion()==2) {
+        if (driver.getMajorVersion() == 2) {
             // @fixme: for unknown reason, we need to load some classes explicitly with 2.0.201
             // only
             try {
@@ -346,6 +323,7 @@ public class H2MigrationTool {
                 loader.loadClass("org.h2.mvstore.MVMap$2$1");
                 loader.loadClass("org.h2.index.MetaIndex");
                 loader.loadClass("org.h2.api.ErrorCode");
+
             } catch (Exception ex) {
                 LOGGER.log(Level.SEVERE, "Failed to load additional classes.", ex);
             }
@@ -361,92 +339,81 @@ public class H2MigrationTool {
         TreeSet<DriverRecord> driverRecords = H2MigrationTool.readDriverRecords(resourceStr);
 
         DriverRecord driverRecord = getDriverRecord(driverRecords, version);
-        if (driverRecord!=null) {
-            return loadDriver(driverRecord);
-        } else {
-            throw new Exception("No Driver found for requested version " + version);
-        }
+        return loadDriver(driverRecord);
     }
 
     public static Driver loadDriver(TreeSet<DriverRecord> driverRecords, String version)
             throws Exception {
         DriverRecord driverRecord = getDriverRecord(driverRecords, version);
-        if (driverRecord!=null) {
-            return loadDriver(driverRecord);
-        } else {
-            throw new Exception("No Driver found for requested version " + version);
-        }
+        return loadDriver(driverRecord);
     }
 
-    public static Driver loadDriver(DriverRecord driverRecord) throws Exception {
-        Driver driver;
-
-        URL url = driverRecord.url;
-        URLClassLoader loader =
-                new URLClassLoader(new URL[]{url}, H2MigrationTool.class.getClassLoader());
-
-        Class classToLoad = Class.forName("org.h2.Driver", true, loader);
-
-        Method method = classToLoad.getDeclaredMethod("load");
-        Object instance = classToLoad.newInstance();
-        driver = (java.sql.Driver) method.invoke(instance);
-        getDriverFromInstance(loader, instance);
-
-        return driver;
+    public static Driver loadDriver(DriverRecord driverRecord) throws PrivilegedActionException {
+        return AccessController.doPrivileged((PrivilegedExceptionAction<Driver>) () -> {
+            URL url = driverRecord.url;
+            try (URLClassLoader loader =
+                    new URLClassLoader(new URL[] {url}, H2MigrationTool.class.getClassLoader())) {
+                Class<?> classToLoad = Class.forName("org.h2.Driver", true, loader);
+                Method method = classToLoad.getDeclaredMethod("load");
+                Object instance = classToLoad.getDeclaredConstructor().newInstance();
+                method.invoke(instance);
+                return getDriverFromInstance(loader, instance);
+            }
+        });
     }
 
-    public static DriverRecord getDriverRecord(TreeSet<DriverRecord> driverRecords,
-                                               int majorVersion,
-                                               int minorVersion, int patchId, String buildID) {
+    public static DriverRecord getDriverRecord(Set<DriverRecord> driverRecords,
+            int majorVersion,
+            int minorVersion, int patchId, String buildID) {
 
-        for (DriverRecord r : driverRecords.descendingSet()) {
-            if (buildID==null || buildID.isEmpty()) {
-                if (r.majorVersion==majorVersion && r.minorVersion==minorVersion
-                        && r.patchId==patchId
-                        && (r.buildId==null || r.buildId.isEmpty())) {
+        for (DriverRecord r : new TreeSet<>(driverRecords).descendingSet()) {
+            if (buildID == null || buildID.isEmpty()) {
+                if (r.majorVersion == majorVersion && r.minorVersion == minorVersion
+                        && r.patchId == patchId
+                        && (r.buildId == null || r.buildId.isEmpty())) {
                     return r;
                 }
-            } else if (r.majorVersion==majorVersion && r.minorVersion==minorVersion
-                    && r.patchId==patchId && r.buildId.equalsIgnoreCase(buildID)) {
+            } else if (r.majorVersion == majorVersion && r.minorVersion == minorVersion
+                    && r.patchId == patchId && r.buildId.equalsIgnoreCase(buildID)) {
                 return r;
             }
         }
         return null;
     }
 
-    public static DriverRecord getDriverRecord(TreeSet<DriverRecord> driverRecords,
-                                               int majorVersion,
-                                               int minorVersion) {
-        for (DriverRecord r : driverRecords.descendingSet()) {
-            if (r.majorVersion==majorVersion && r.minorVersion==minorVersion) {
+    public static DriverRecord getDriverRecord(Set<DriverRecord> driverRecords,
+            int majorVersion,
+            int minorVersion) {
+        for (DriverRecord r : new TreeSet<>(driverRecords).descendingSet()) {
+            if (r.majorVersion == majorVersion && r.minorVersion == minorVersion) {
                 return r;
             }
         }
         return null;
     }
 
-    public static DriverRecord getDriverRecord(TreeSet<DriverRecord> driverRecords, String version)
+    public static DriverRecord getDriverRecord(Set<DriverRecord> driverRecords, String version)
             throws Exception {
-        DriverRecord driverRecord = null;
+        DriverRecord driverRecord;
 
         Matcher matcher = VERSION_PATTERN.matcher(version);
         if (matcher.find()) {
-            if (matcher.groupCount()==2) {
-                int majorVersion = Integer.valueOf(matcher.group(1));
-                int minorVersion = Integer.valueOf(matcher.group(2));
+            if (matcher.groupCount() == 2) {
+                int majorVersion = Integer.parseInt(matcher.group(1));
+                int minorVersion = Integer.parseInt(matcher.group(2));
 
                 driverRecord = getDriverRecord(driverRecords, majorVersion, minorVersion);
-            } else if (matcher.groupCount()==3) {
-                int majorVersion = Integer.valueOf(matcher.group(1));
-                int minorVersion = Integer.valueOf(matcher.group(2));
-                int patchId = Integer.valueOf(matcher.group(3));
+            } else if (matcher.groupCount() == 3) {
+                int majorVersion = Integer.parseInt(matcher.group(1));
+                int minorVersion = Integer.parseInt(matcher.group(2));
+                int patchId = Integer.parseInt(matcher.group(3));
 
                 driverRecord =
                         getDriverRecord(driverRecords, majorVersion, minorVersion, patchId, "");
-            } else if (matcher.groupCount()==5) {
-                int majorVersion = Integer.valueOf(matcher.group(1));
-                int minorVersion = Integer.valueOf(matcher.group(2));
-                int patchId = Integer.valueOf(matcher.group(3));
+            } else if (matcher.groupCount() == 5) {
+                int majorVersion = Integer.parseInt(matcher.group(1));
+                int minorVersion = Integer.parseInt(matcher.group(2));
+                int patchId = Integer.parseInt(matcher.group(3));
                 String buildId = matcher.group(5);
 
                 driverRecord = getDriverRecord(driverRecords, majorVersion, minorVersion, patchId,
@@ -462,7 +429,7 @@ public class H2MigrationTool {
                             + " does not match the required format ###.###.###");
         }
 
-        if (driverRecord==null) {
+        if (driverRecord == null) {
             throw new Exception("No H2 driver found for requestion version " + version);
         }
 
@@ -493,7 +460,7 @@ public class H2MigrationTool {
             // parse the command line arguments
             CommandLine line = parser.parse(options, args);
 
-            if (line.getOptions().length==0 && !GraphicsEnvironment.isHeadless()) {
+            if (line.getOptions().length == 0 && !GraphicsEnvironment.isHeadless()) {
                 System.setProperty("awt.useSystemAAFontSettings", "lcd");
                 System.setProperty("swing.aatext", "true");
                 System.setProperty("prism.lcdtext", "true");
@@ -504,8 +471,8 @@ public class H2MigrationTool {
                         try {
                             UIManager.setLookAndFeel(NimbusLookAndFeel.class.getName());
                         } catch (ClassNotFoundException | InstantiationException
-                                 | IllegalAccessException
-                                 | UnsupportedLookAndFeelException ex) {
+                                | IllegalAccessException
+                                | UnsupportedLookAndFeelException ex) {
                             LOGGER.log(Level.SEVERE, "Error when setting the NIMBUS L&F", ex);
                         }
 
@@ -523,7 +490,7 @@ public class H2MigrationTool {
                 return;
             }
 
-            if (line.hasOption("help") || line.getOptions().length==0) {
+            if (line.hasOption("help") || line.getOptions().length == 0) {
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.setOptionComparator(null);
                 formatter.printHelp("java -jar H2MigrationTool.jar", options, true);
@@ -536,31 +503,31 @@ public class H2MigrationTool {
             try {
                 String ressourceName =
                         line.hasOption("lib-dir")
-                        ? getAbsoluteFileName(line.getOptionValue("lib-dir"))
-                        :null;
+                                ? getAbsoluteFileName(line.getOptionValue("lib-dir"))
+                                : null;
 
                 String versionFrom =
-                        line.hasOption("version-from") ? line.getOptionValue("version-from"):null;
+                        line.hasOption("version-from") ? line.getOptionValue("version-from") : null;
                 String versionTo =
-                        line.hasOption("version-to") ? line.getOptionValue("version-to"):null;
+                        line.hasOption("version-to") ? line.getOptionValue("version-to") : null;
 
                 String databaseFileName = line.getOptionValue("db-file");
                 databaseFileName = getAbsoluteFileName(databaseFileName);
 
-                String user = line.hasOption("user") ? line.getOptionValue("user"):"sa";
-                String password = line.hasOption("password") ? line.getOptionValue("password"):"";
+                String user = line.hasOption("user") ? line.getOptionValue("user") : "sa";
+                String password = line.hasOption("password") ? line.getOptionValue("password") : "";
 
                 String scriptFileName =
-                        line.hasOption("script-file") ? line.getOptionValue("script-file"):"";
-                if (scriptFileName!=null && scriptFileName.length() > 1) {
+                        line.hasOption("script-file") ? line.getOptionValue("script-file") : "";
+                if (scriptFileName != null && scriptFileName.length() > 1) {
                     scriptFileName = getAbsoluteFileName(scriptFileName);
                 }
 
                 // "COMPRESSION ZIP";
                 String compression =
                         line.hasOption("compression")
-                        ? "COMPRESSION " + line.getOptionValue("compression")
-                        :"";
+                                ? "COMPRESSION " + line.getOptionValue("compression")
+                                : "";
 
                 // "VARIABLE_BINARY"
                 String upgradeOptions = "";
@@ -584,7 +551,7 @@ public class H2MigrationTool {
                 H2MigrationTool app = new H2MigrationTool();
                 H2MigrationTool.readDriverRecords(ressourceName);
 
-                if (versionFrom!=null && versionFrom.length() > 1) {
+                if (versionFrom != null && versionFrom.length() > 1) {
                     app.migrate(versionFrom, versionTo, databaseFileName, user, password,
                             scriptFileName,
                             compression, upgradeOptions, overwrite, force, null);
@@ -611,70 +578,6 @@ public class H2MigrationTool {
 
     private void readHooks(String versionFrom) {
         hooks.clear();
-
-        FilenameFilter filenameFilter = new FilenameFilter() {
-            @Override
-            public boolean accept(File file, String string) {
-                String s = string.toLowerCase();
-                return s.endsWith(".sql") || s.endsWith(".groovy");
-            }
-        };
-
-        // URL url = H2MigrationTool.class.getResource("com/manticore/hooks/" + versionFrom +
-        // "/export");
-        //
-        // if (url != null)
-        // try {
-        // File d = new File(url.toURI());
-        // for (File f : d.listFiles(filenameFilter)) {
-        // FileInputStream inputStream;
-        // try {
-        // inputStream = new FileInputStream(f);
-        // String text = IOUtils.toString(inputStream, (String) null);
-        // inputStream.close();
-        //
-        // String name = f.getName();
-        //
-        // hooks.add(new Hook(name, HookStage.EXPORT, text));
-        //
-        // } catch (FileNotFoundException ex) {
-        // Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
-        // } catch (IOException ex) {
-        // Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
-        // }
-        // }
-        // } catch (URISyntaxException ex) {
-        // Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
-        // }
-        //
-        // url =
-        // H2MigrationTool.class
-        // .getClassLoader()
-        // .getResource("com/manticore/hooks/" + versionFrom + "/import");
-        //
-        // if (url != null)
-        // try {
-        // File d = new File(url.toURI());
-        // for (File f : d.listFiles(filenameFilter)) {
-        // FileInputStream inputStream;
-        // try {
-        // inputStream = new FileInputStream(f);
-        // String text = IOUtils.toString(inputStream, (String) null);
-        // inputStream.close();
-        //
-        // String name = f.getName();
-        //
-        // hooks.add(new Hook(name, HookStage.IMPORT, text));
-        //
-        // } catch (FileNotFoundException ex) {
-        // Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
-        // } catch (IOException ex) {
-        // Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
-        // }
-        // }
-        // } catch (URISyntaxException ex) {
-        // Logger.getLogger(H2MigrationTool.class.getName()).log(Level.SEVERE, null, ex);
-        // }
     }
 
     private void executeCommands(Connection connection, List<String> commands) throws Exception {
@@ -686,7 +589,7 @@ public class H2MigrationTool {
             }
             st.close();
         } finally {
-            if (st!=null) {
+            if (st != null) {
                 try {
                     st.close();
                 } catch (SQLException ex) {
@@ -731,7 +634,7 @@ public class H2MigrationTool {
                 } catch (SQLException ex) {
                     LOGGER.log(Level.SEVERE, null, ex);
                 } finally {
-                    if (st!=null) {
+                    if (st != null) {
                         try {
                             st.close();
                         } catch (SQLException ex) {
@@ -744,28 +647,13 @@ public class H2MigrationTool {
         return commands;
     }
 
-    private DriverRecord getDriverRecord(int majorVersion, int minorVersion, int patchId,
-                                         String buildID) {
-        return getDriverRecord(H2MigrationTool.DRIVER_RECORDS, majorVersion, minorVersion, patchId,
-                buildID);
-    }
-
-    private DriverRecord getDriverRecord(int majorVersion, int minorVersion) {
-        for (DriverRecord r : DRIVER_RECORDS.descendingSet()) {
-            if (r.majorVersion==majorVersion && r.minorVersion==minorVersion) {
-                return r;
-            }
-        }
-        return null;
-    }
-
     private DriverRecord getDriverRecord(String version) throws Exception {
         return getDriverRecord(H2MigrationTool.DRIVER_RECORDS, version);
     }
 
     private ScriptResult writeScript(DriverRecord driverRecord, String databaseFileName,
-                                     String user,
-                                     String password, String scriptFileName, String options, String connectionParameters)
+            String user,
+            String password, String scriptFileName, String options, String connectionParameters)
             throws SQLException, ClassNotFoundException, NoSuchMethodException,
             InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -775,72 +663,51 @@ public class H2MigrationTool {
         properties.setProperty("password", password);
 
         URL url = driverRecord.url;
-        URLClassLoader loader = new URLClassLoader(new URL[]{url});
+        URLClassLoader loader = new URLClassLoader(new URL[] {url});
 
-        Class classToLoad = Class.forName("org.h2.Driver", true, loader);
+        Class<?> classToLoad = Class.forName("org.h2.Driver", true, loader);
 
         Method method = classToLoad.getDeclaredMethod("load");
-        Object instance = classToLoad.newInstance();
+        Object instance = classToLoad.getDeclaredConstructor().newInstance();
         Driver driver = (java.sql.Driver) method.invoke(instance);
         getDriverFromInstance(loader, instance);
 
-        Connection connection = null;
-
-        try {
-            // connection =
-            // driver.connect("jdbc:h2://" + databaseFileName + ";ACCESS_MODE_DATA=r",
-            // properties);
-
-            connection = driver.connect(
-                    "jdbc:h2:" + databaseFileName + ";ACCESS_MODE_DATA=r" + connectionParameters,
-                    properties);
-
+        try (Connection connection = driver.connect(
+                "jdbc:h2:" + databaseFileName + ";ACCESS_MODE_DATA=r" + connectionParameters,
+                properties)) {
             List<String> commands = executeHooks(connection, HookStage.IMPORT);
-
             executeHooks(connection, HookStage.EXPORT);
-
             classToLoad = Class.forName("org.h2.tools.Script", true, loader);
 
             // processScript(String url, String user, String password, String fileName, String
             // options1,
             // String options2) throws SQLException
-            if (driver.getMajorVersion()==1 && driver.getMinorVersion() <= 3) {
-                try (Statement st = connection.createStatement()) {
-                    String sql = "SCRIPT TO '" + scriptFileName + "' " + options;
+            if (driver.getMajorVersion() == 1 && driver.getMinorVersion() <= 3) {
+                String sql = String.format("SCRIPT TO '%s' %s", scriptFileName, options);
+                try (PreparedStatement st = connection.prepareStatement(sql)) {
                     st.execute(sql);
                     return new ScriptResult(scriptFileName, commands);
                 }
             } else {
                 Class<?>[] argClasses =
-                        new Class<?>[]{Connection.class, String.class, String.class, String.class};
+                        new Class<?>[] {Connection.class, String.class, String.class, String.class};
                 method = classToLoad.getDeclaredMethod("process", argClasses);
-                instance = classToLoad.newInstance();
+                instance = classToLoad.getDeclaredConstructor().newInstance();
 
                 // Connection conn, String fileName, String options1, String options2
-                Object result = method.invoke(instance, connection, scriptFileName, "", options);
+                method.invoke(instance, connection, scriptFileName, "", options);
                 return new ScriptResult(scriptFileName, commands);
             }
 
-        } finally {
-
-            if (connection!=null) {
-                connection.close();
-            }
-
-            try {
-                loader.close();
-            } catch (Exception ex) {
-                LOGGER.log(Level.FINEST, null, ex);
-            }
         }
     }
 
     public ScriptResult writeRecoveryScript(DriverRecord driverRecord, String folderName,
-                                            String databaseFileName)
+            String databaseFileName)
             throws Exception {
 
         String databaseName = "";
-        String scriptFileName = "";
+        String scriptFileName;
 
         if (databaseFileName.toLowerCase().endsWith(".mv.db")
                 || databaseFileName.toLowerCase().endsWith(".h2.db")) {
@@ -855,57 +722,49 @@ public class H2MigrationTool {
                     + " does not seem to be a H2 database. Only *.h2.db and *.mv.db files are supported.");
         }
 
-        URL url = driverRecord.url;
-        URLClassLoader loader = new URLClassLoader(new URL[]{url});
+        final URL url = driverRecord.url;
+        final String finalDatabaseName = databaseName;
+        AccessController.doPrivileged((PrivilegedExceptionAction<Driver>) () -> {
+            try (URLClassLoader loader =
+                    new URLClassLoader(new URL[] {url}, H2MigrationTool.class.getClassLoader())) {
+                Class<?> classToLoad = Class.forName("org.h2.Driver", true, loader);
+                Method method = classToLoad.getDeclaredMethod("load");
+                Object instance = classToLoad.getDeclaredConstructor().newInstance();
+                method.invoke(instance);
 
-        Class classToLoad = Class.forName("org.h2.Driver", true, loader);
-
-        Method method = classToLoad.getDeclaredMethod("load");
-        Object instance = classToLoad.newInstance();
-        Driver driver = (java.sql.Driver) method.invoke(instance);
-        getDriverFromInstance(loader, instance);
-
-        Connection connection = null;
-        try {
-            classToLoad = Class.forName("org.h2.tools.Recover", true, loader);
-
-            Class<?>[] argClasses = new Class<?>[]{String.class, String.class};
-            method = classToLoad.getDeclaredMethod("execute", argClasses);
-            instance = classToLoad.newInstance();
-
-            // public static void execute(String dir, String db) throws SQLException
-            Object result = method.invoke(instance, folderName, databaseName);
-            return new ScriptResult(scriptFileName, new ArrayList<>());
-
-        } finally {
-
-            if (connection!=null) {
-                connection.close();
+                return getDriverFromInstance(loader, instance);
             }
+        });
 
-            try {
-                loader.close();
-            } catch (Exception ex) {
-                LOGGER.log(Level.FINEST, null, ex);
+        return AccessController.doPrivileged((PrivilegedExceptionAction<ScriptResult>) () -> {
+            try (URLClassLoader loader =
+                    new URLClassLoader(new URL[] {url}, H2MigrationTool.class.getClassLoader())) {
+                Class<?> classToLoad = Class.forName("org.h2.tools.Recover", true, loader);
+                Class<?>[] argClasses = new Class<?>[] {String.class, String.class};
+                Method method = classToLoad.getDeclaredMethod("execute", argClasses);
+                Object instance = classToLoad.getDeclaredConstructor().newInstance();
+
+                // public static void execute(String dir, String db) throws SQLException
+                method.invoke(instance, folderName, finalDatabaseName);
+                return new ScriptResult(scriptFileName, new ArrayList<>());
             }
-        }
+        });
     }
 
     private ScriptResult createFromScript(DriverRecord driverRecord, String databaseFileName,
-                                          String user, String password, String scriptFileName, String options,
-                                          List<String> commands,
-                                          boolean overwrite, String connectionParameters) throws
-            Exception {
+            String user, String password, String scriptFileName, String options,
+            List<String> commands,
+            boolean overwrite, String connectionParameters) throws Exception {
 
         String modifiedDatabaseFileName = databaseFileName + "." + driverRecord.patchId
-                + (!driverRecord.buildId.isEmpty() ? ("-" + driverRecord.buildId):"");
+                + (!driverRecord.buildId.isEmpty() ? ("-" + driverRecord.buildId) : "");
 
         Properties properties = new Properties();
         properties.setProperty("user", user);
         properties.setProperty("password", password);
 
         URL url = driverRecord.url;
-        URLClassLoader loader = new URLClassLoader(new URL[]{url});
+        URLClassLoader loader = new URLClassLoader(new URL[] {url});
 
         Class<?> classToLoad = Class.forName("org.h2.Driver", true, loader);
 
@@ -917,7 +776,7 @@ public class H2MigrationTool {
         File dbFile = new File(modifiedDatabaseFileName + ".mv.db");
         if (dbFile.exists()) {
             if (dbFile.isFile() && dbFile.canWrite() && overwrite) {
-                dbFile.delete();
+                boolean delete = dbFile.delete();
             } else if (dbFile.isFile() && !(dbFile.canWrite() && overwrite)) {
                 throw new Exception("The Database File " + dbFile
                         + " exists already and should not be overwritten automatically.");
@@ -928,10 +787,14 @@ public class H2MigrationTool {
             }
         }
 
-        try (Connection connection = driver.connect("jdbc:h2:" + modifiedDatabaseFileName + connectionParameters,
-                properties); Statement stat = connection.createStatement()) {
 
-            stat.execute("RUNSCRIPT FROM '" + scriptFileName + "' " + options);
+        try (Connection connection =
+                driver.connect("jdbc:h2:" + modifiedDatabaseFileName + connectionParameters,
+                        properties);
+                Statement stat = connection.createStatement()) {
+
+            final String sqlStr = String.format("RUNSCRIPT FROM '%s' %s", scriptFileName, options);
+            stat.executeUpdate(sqlStr);
 
             executeCommands(connection, commands);
 
@@ -940,15 +803,15 @@ public class H2MigrationTool {
 
             commands.addAll(commands1);
 
-            stat.execute("ANALYZE SAMPLE_SIZE 0");
-            stat.execute("SHUTDOWN COMPACT");
+            stat.executeUpdate("ANALYZE SAMPLE_SIZE 0");
+            stat.executeUpdate("SHUTDOWN COMPACT");
         }
         return new ScriptResult(scriptFileName, commands);
     }
 
     public ScriptResult migrate(String versionFrom, String versionTo, String databaseFileName,
-                                String user, String password, String scriptFileName, String compression,
-                                String upgradeOptions, boolean overwrite, boolean force, String connectionParameters)
+            String user, String password, String scriptFileName, String compression,
+            String upgradeOptions, boolean overwrite, boolean force, String connectionParameters)
             throws Exception {
 
         String modifiedDatabaseFileName = databaseFileName;
@@ -964,18 +827,20 @@ public class H2MigrationTool {
         if (modifiedDatabaseFileName.toLowerCase().endsWith(".mv.db")
                 || modifiedDatabaseFileName.toLowerCase().endsWith(".h2.db")) {
             modifiedDatabaseFileName =
-                    modifiedDatabaseFileName.substring(0, modifiedDatabaseFileName.length() - ".mv.db".length());
+                    modifiedDatabaseFileName.substring(0,
+                            modifiedDatabaseFileName.length() - ".mv.db".length());
             LOGGER.info(
-                    "Found H2 DB " + modifiedDatabaseFileName + " which will be exported to SQL Script");
+                    "Found H2 DB " + modifiedDatabaseFileName
+                            + " which will be exported to SQL Script");
 
-            if (modifiedScriptFileName==null || modifiedScriptFileName.isEmpty()) {
+            if (modifiedScriptFileName == null || modifiedScriptFileName.isEmpty()) {
                 modifiedScriptFileName = modifiedDatabaseFileName + ".sql";
             }
 
-            if (modifiedCompression!=null && modifiedCompression.endsWith("GZIP")
+            if (modifiedCompression != null && modifiedCompression.endsWith("GZIP")
                     && !modifiedScriptFileName.toLowerCase().endsWith(".gz")) {
                 modifiedScriptFileName = modifiedScriptFileName + ".gz";
-            } else if (modifiedCompression!=null && modifiedCompression.endsWith("ZIP")
+            } else if (modifiedCompression != null && modifiedCompression.endsWith("ZIP")
                     && !modifiedScriptFileName.toLowerCase().endsWith(".zip")) {
                 modifiedScriptFileName = modifiedScriptFileName + ".zip";
             }
@@ -983,8 +848,9 @@ public class H2MigrationTool {
             readHooks(versionFrom);
             try {
 
-                scriptResult = writeScript(driverRecordFrom, modifiedDatabaseFileName, user, password,
-                        modifiedScriptFileName, modifiedCompression, connectionParameters);
+                scriptResult =
+                        writeScript(driverRecordFrom, modifiedDatabaseFileName, user, password,
+                                modifiedScriptFileName, modifiedCompression, connectionParameters);
 
                 modifiedScriptFileName = scriptResult.scriptFileName;
                 commands.addAll(scriptResult.commands);
@@ -1000,13 +866,15 @@ public class H2MigrationTool {
             }
         } else if (modifiedDatabaseFileName.toLowerCase().endsWith(".sql")) {
             LOGGER.info(
-                    "Found SQL Script " + modifiedDatabaseFileName + " which will be imported directly.");
+                    "Found SQL Script " + modifiedDatabaseFileName
+                            + " which will be imported directly.");
 
             modifiedCompression = "";
 
             modifiedScriptFileName = modifiedDatabaseFileName;
             modifiedDatabaseFileName =
-                    modifiedDatabaseFileName.substring(0, modifiedDatabaseFileName.length() - ".sql".length());
+                    modifiedDatabaseFileName.substring(0,
+                            modifiedDatabaseFileName.length() - ".sql".length());
             success = true;
 
         } else if (modifiedDatabaseFileName.toLowerCase().endsWith(".sql.gz")) {
@@ -1018,7 +886,8 @@ public class H2MigrationTool {
 
             modifiedScriptFileName = modifiedDatabaseFileName;
             modifiedDatabaseFileName =
-                    modifiedDatabaseFileName.substring(0, modifiedDatabaseFileName.length() - ".sql.gz".length());
+                    modifiedDatabaseFileName.substring(0,
+                            modifiedDatabaseFileName.length() - ".sql.gz".length());
             success = true;
 
         } else if (modifiedDatabaseFileName.toLowerCase().endsWith(".sql.zip")) {
@@ -1030,7 +899,8 @@ public class H2MigrationTool {
 
             modifiedScriptFileName = modifiedDatabaseFileName;
             modifiedDatabaseFileName =
-                    databaseFileName.substring(0, modifiedDatabaseFileName.length() - ".sql.zip".length());
+                    databaseFileName.substring(0,
+                            modifiedDatabaseFileName.length() - ".sql.zip".length());
             success = true;
 
         } else {
@@ -1039,8 +909,9 @@ public class H2MigrationTool {
         }
 
         String options =
-                modifiedCompression!=null && modifiedCompression.length() > 0 ? modifiedCompression + " " + upgradeOptions
-                                                              :upgradeOptions;
+                modifiedCompression != null && modifiedCompression.length() > 0
+                        ? modifiedCompression + " " + upgradeOptions
+                        : upgradeOptions;
         if (success) {
             try {
                 scriptResult = createFromScript(driverRecordTo, databaseFileName, user, password,
@@ -1068,13 +939,12 @@ public class H2MigrationTool {
     }
 
     public void migrateAuto(String versionTo, String databaseFileName, String user, String password,
-                            String scriptFileName, String compression, String upgradeOptions, boolean overwrite,
-                            boolean force) throws Exception {
+            String scriptFileName, String compression, String upgradeOptions, boolean overwrite,
+            boolean force) throws Exception {
 
         ArrayList<String> databaseNames = new ArrayList<>();
         String modifiedDatabaseFileName = databaseFileName;
         String modifiedScriptFileName = scriptFileName;
-        String modifiedCompression = compression;
 
         FilenameFilter filenameFilter = new FilenameFilter() {
             @Override
@@ -1087,12 +957,15 @@ public class H2MigrationTool {
         File folder = new File(modifiedDatabaseFileName);
         if (folder.isDirectory()) {
             LOGGER.info("Will convert all H2 databases in folder " + folder.getAbsolutePath());
-            for (File f : folder.listFiles(filenameFilter)) {
-                String fileName = f.getCanonicalPath();
-                fileName = fileName.substring(0, fileName.length() - ".mv.db".length());
-                databaseNames.add(fileName);
+            File[] files = folder.listFiles(filenameFilter);
+            if (files != null) {
+                for (File f : files) {
+                    String fileName = f.getCanonicalPath();
+                    fileName = fileName.substring(0, fileName.length() - ".mv.db".length());
+                    databaseNames.add(fileName);
 
-                LOGGER.info("added DB: " + fileName);
+                    LOGGER.info("added DB: " + fileName);
+                }
             }
         } else {
             if (modifiedDatabaseFileName.toLowerCase().endsWith(".mv.db")) {
@@ -1119,31 +992,32 @@ public class H2MigrationTool {
 
         DriverRecord firstDriverRecordFrom = DRIVER_RECORDS.last(); // getDriverRecord(1, 4);
         DriverRecord driverRecordTo =
-                versionTo!=null && versionTo.length() > 1 ? getDriverRecord(versionTo)
-                                                          :DRIVER_RECORDS.last();
+                versionTo != null && versionTo.length() > 1 ? getDriverRecord(versionTo)
+                        : DRIVER_RECORDS.last();
 
         for (String databaseName : databaseNames) {
-            if (modifiedScriptFileName==null || modifiedScriptFileName.isEmpty()) {
+            if (modifiedScriptFileName == null || modifiedScriptFileName.isEmpty()) {
                 modifiedScriptFileName = databaseName + ".sql";
             }
 
-            if (modifiedCompression!=null && modifiedCompression.endsWith("GZIP")
+            if (compression != null && compression.endsWith("GZIP")
                     && !modifiedScriptFileName.toLowerCase().endsWith(".gz")) {
                 modifiedScriptFileName = modifiedScriptFileName + ".gz";
-            } else if (modifiedCompression!=null && modifiedCompression.endsWith("ZIP")
+            } else if (compression != null && compression.endsWith("ZIP")
                     && !modifiedScriptFileName.toLowerCase().endsWith(".zip")) {
                 modifiedScriptFileName = modifiedScriptFileName + ".zip";
             }
 
             boolean success = false;
-            NavigableSet<DriverRecord> headSet = DRIVER_RECORDS.headSet(firstDriverRecordFrom, true);
+            NavigableSet<DriverRecord> headSet =
+                    DRIVER_RECORDS.headSet(firstDriverRecordFrom, true);
             for (DriverRecord driverRecordFrom : headSet.descendingSet()) {
                 readHooks(driverRecordFrom.getVersion());
 
                 try {
                     ScriptResult scriptResult =
                             writeScript(driverRecordFrom, databaseName, user, password,
-                                    modifiedScriptFileName, modifiedCompression, null);
+                                    modifiedScriptFileName, compression, null);
 
                     modifiedScriptFileName = scriptResult.scriptFileName;
 
@@ -1161,9 +1035,9 @@ public class H2MigrationTool {
             }
 
             String options =
-                    modifiedCompression!=null && modifiedCompression.length() > 0
-                    ? modifiedCompression + " " + upgradeOptions
-                    :upgradeOptions;
+                    compression != null && compression.length() > 0
+                            ? compression + " " + upgradeOptions
+                            : upgradeOptions;
             if (success) {
                 try {
                     ScriptResult scriptResult =
@@ -1187,18 +1061,13 @@ public class H2MigrationTool {
         }
     }
 
-    private enum HookType {
-        SQL, GROOVY
-    }
-
     private enum HookStage {
         EXPORT, IMPORT, INIT
     }
 
-    private class Hook implements Comparable<Hook> {
+    private static class Hook implements Comparable<Hook> {
 
         String id;
-        HookType type;
         HookStage stage;
 
         String text;
@@ -1208,10 +1077,8 @@ public class H2MigrationTool {
 
             if (lowerCaseName.endsWith(".sql")) {
                 this.id = lowerCaseName.substring(0, name.length() - 4);
-                this.type = HookType.SQL;
             } else if (lowerCaseName.endsWith(".groovy")) {
                 this.id = lowerCaseName.substring(0, lowerCaseName.length() - 7);
-                this.type = HookType.GROOVY;
             }
             this.stage = stage;
             this.text = text;
@@ -1231,13 +1098,13 @@ public class H2MigrationTool {
 
         @Override
         public boolean equals(Object obj) {
-            if (this==obj) {
+            if (this == obj) {
                 return true;
             }
-            if (obj==null) {
+            if (obj == null) {
                 return false;
             }
-            if (getClass()!=obj.getClass()) {
+            if (getClass() != obj.getClass()) {
                 return false;
             }
             final Hook other = (Hook) obj;
@@ -1245,14 +1112,13 @@ public class H2MigrationTool {
         }
     }
 
-    public class ScriptResult {
-
-        String scriptFileName;
-        List<String> commands;
+    public static class ScriptResult {
+        final String scriptFileName;
+        final List<String> commands;
 
         public ScriptResult(String scriptFileName, List<String> commands) {
             this.scriptFileName = scriptFileName;
-            this.commands = commands;
+            this.commands = new ArrayList<>(commands);
         }
     }
 }

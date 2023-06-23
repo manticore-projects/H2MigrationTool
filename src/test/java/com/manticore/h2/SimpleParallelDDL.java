@@ -74,7 +74,7 @@ public class SimpleParallelDDL {
         try (Connection con = DriverManager.getConnection(
                 connectionStr,
                 PROPERTIES);
-             Statement st = con.createStatement()) {
+                Statement st = con.createStatement()) {
             st.executeUpdate("CREATE TABLE test (id VARCHAR(40) NOT NULL PRIMARY KEY)");
             for (int i = 0; i < 10000; i++) {
                 st.executeUpdate("INSERT INTO test VALUES ('" + i + "')");
@@ -84,7 +84,7 @@ public class SimpleParallelDDL {
 
     @AfterAll
     public static void tearDown() throws Exception {
-        if (server!=null) {
+        if (server != null) {
             server.stop();
         }
 
@@ -107,7 +107,7 @@ public class SimpleParallelDDL {
                 @Override
                 public void run() {
                     try (Connection con = DriverManager.getConnection(connectionStr, PROPERTIES);
-                         Statement st = con.createStatement()) {
+                            Statement st = con.createStatement()) {
                         st.executeUpdate(
                                 "CREATE /*LOCAL TEMPORARY*/ TABLE " + tableName
                                         + " AS  SELECT a.id FROM test a INNER JOIN test b ON a.id=b.id");

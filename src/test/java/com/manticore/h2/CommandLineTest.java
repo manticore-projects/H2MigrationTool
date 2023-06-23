@@ -80,11 +80,11 @@ public class CommandLineTest {
 
         Driver driver =
                 H2MigrationTool.loadDriver(
-                        (versionFrom!=null && versionFrom.length() > 0)
-                        ? versionFrom
-                        :"1.4.200");
+                        (versionFrom != null && versionFrom.length() > 0)
+                                ? versionFrom
+                                : "1.4.200");
         try (Connection con = driver.connect("jdbc:h2:" + dbFileUriStr, properties);
-             Statement st = con.createStatement()) {
+                Statement st = con.createStatement()) {
 
             for (String sqlStr : DDL_STR.split(";")) {
                 st.executeUpdate(sqlStr);
@@ -100,27 +100,27 @@ public class CommandLineTest {
 
         ArrayList<String> args = new ArrayList<>();
 
-        if (versionFrom!=null && versionFrom.length() > 0) {
+        if (versionFrom != null && versionFrom.length() > 0) {
             args.add("-f");
             args.add(versionFrom);
         }
 
-        if (versionTo!=null && versionTo.length() > 0) {
+        if (versionTo != null && versionTo.length() > 0) {
             args.add("-t");
             args.add(versionTo);
         }
 
-        if (databaseName!=null && databaseName.length() > 0) {
+        if (databaseName != null && databaseName.length() > 0) {
             args.add("-d");
             args.add(databaseName);
         }
 
-        if (compression!=null && compression.length() > 0) {
+        if (compression != null && compression.length() > 0) {
             args.add("-c");
             args.add(compression);
         }
 
-        if (options!=null && options.length() > 0) {
+        if (options != null && options.length() > 0) {
             args.add("-o");
             args.add(options);
         }
@@ -156,27 +156,27 @@ public class CommandLineTest {
 
         ArrayList<String> args = new ArrayList<>();
 
-        if (versionFrom!=null && versionFrom.length() > 0) {
+        if (versionFrom != null && versionFrom.length() > 0) {
             args.add("-f");
             args.add(versionFrom);
         }
 
-        if (versionTo!=null && versionTo.length() > 0) {
+        if (versionTo != null && versionTo.length() > 0) {
             args.add("-t");
             args.add(versionTo);
         }
 
-        if (databaseName!=null && databaseName.length() > 0) {
+        if (databaseName != null && databaseName.length() > 0) {
             args.add("-d");
             args.add(databaseName);
         }
 
-        if (compression!=null && compression.length() > 0) {
+        if (compression != null && compression.length() > 0) {
             args.add("-c");
             args.add(compression);
         }
 
-        if (options!=null && options.length() > 0) {
+        if (options != null && options.length() > 0) {
             args.add("-o");
             args.add(options);
         }

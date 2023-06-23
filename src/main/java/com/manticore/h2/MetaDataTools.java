@@ -34,14 +34,14 @@ public class MetaDataTools {
     public static final String DB_FILE_URI_STR =
             "file:/home/are/Downloads/cmb/.manticore/ifrsbox_202101";
 
-    public static Collection<Recommendation> verifyDecinmalPrecision(Connection con)
+    public static Collection<Recommendation> verifyDecimalPrecision(Connection con)
             throws SQLException {
         ArrayList<Recommendation> recommendations = new ArrayList<>();
 
         MetaData meta = new MetaData(con);
         meta.build();
 
-        for (Catalog cat : meta.catalogs.values()) {
+        for (Catalog cat : meta.getCatalogs().values()) {
             for (Schema schema : cat.schemas.values()) {
                 for (Table table : schema.tables.values()) {
                     for (Column column : table.columns) {
@@ -57,7 +57,7 @@ public class MetaDataTools {
                                             + column.tableSchema + "\".\"" + column.tableName
                                             + "\"";
                             try (Statement st = con.createStatement();
-                                 ResultSet rs = st.executeQuery(sqlStr)) {
+                                    ResultSet rs = st.executeQuery(sqlStr)) {
                                 while (rs.next()) {
                                     BigDecimal d = rs.getBigDecimal(1);
 
@@ -71,7 +71,7 @@ public class MetaDataTools {
                                                 + "(" + precision + ", " + scale + ")");
 
                                 String issue =
-                                        "Invalid Decimal Precsion/Scale: " + column.tableSchema
+                                        "Invalid Decimal Precision/Scale: " + column.tableSchema
                                                 + "." + column.tableName + "." + column.columnName
                                                 + "    " + column.typeName + " ("
                                                 + column.columnSize + "." + column.decimalDigits
@@ -83,7 +83,7 @@ public class MetaDataTools {
                                         + "(" + precision + "," + scale + ");\n";
 
                                 Recommendation recommendation = new Recommendation(
-                                        Recommendation.Type.DECIMAL_PRECISION, column, issue,
+                                        issue,
                                         alterStatementStr);
 
                                 recommendations.add(recommendation);

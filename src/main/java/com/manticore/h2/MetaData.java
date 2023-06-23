@@ -17,6 +17,8 @@ package com.manticore.h2;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.Map;
 import java.util.TreeMap;
 
 /**
@@ -24,16 +26,14 @@ import java.util.TreeMap;
  */
 public class MetaData {
 
-    TreeMap<String, Catalog> catalogs = new TreeMap<>();
-    Connection con;
+    private final TreeMap<String, Catalog> catalogs = new TreeMap<>();
+    private final DatabaseMetaData metaData;
 
-    public MetaData(Connection con) {
-        this.con = con;
+    public MetaData(Connection con) throws SQLException {
+        this.metaData = con.getMetaData();
     }
 
     public void build() throws SQLException {
-        DatabaseMetaData metaData = con.getMetaData();
-
         for (Catalog catalog : Catalog.getCatalogs(metaData)) {
             put(catalog);
         }
@@ -58,6 +58,10 @@ public class MetaData {
 
     public Catalog put(Catalog catalog) {
         return catalogs.put(catalog.tableCatalog.toUpperCase(), catalog);
+    }
+
+    public Map<String, Catalog> getCatalogs() {
+        return Collections.unmodifiableMap(catalogs);
     }
 
     public Schema put(Schema schema) {

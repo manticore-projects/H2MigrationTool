@@ -32,7 +32,7 @@ public class DriverRecord implements Comparable<DriverRecord> {
     public static final Logger LOGGER = Logger.getLogger(DriverRecord.class.getName());
     // git rev-list --topo-order -10000 HEAD --pretty=reference --abbrev-commit --reverse | sed -n
     // '1p;0~2p' > ~/data/src/H2MigrationTool/src/com/manticore/h2/h2-git.log
-    public static final ArrayList<String> BUILD_ID_LIST = new ArrayList<>();
+    private static final ArrayList<String> BUILD_ID_LIST = new ArrayList<>();
     int majorVersion;
     int minorVersion;
     int patchId;
@@ -41,11 +41,11 @@ public class DriverRecord implements Comparable<DriverRecord> {
 
     public DriverRecord(int majorVersion, int minorVersion, int patchID, String buildId, URL url) {
 
-        if (buildId!=null && !buildId.isEmpty()) {
+        if (buildId != null && !buildId.isEmpty()) {
             synchronized (BUILD_ID_LIST) {
                 if (BUILD_ID_LIST.isEmpty()) {
                     try (InputStream in =
-                                 ClassLoader.getSystemResourceAsStream("com/manticore/h2/h2-git.log")) {
+                            ClassLoader.getSystemResourceAsStream("com/manticore/h2/h2-git.log")) {
                         for (String line : IOUtils.readLines(in, Charset.defaultCharset())) {
                             String id = line.split(" ", 2)[0];
                             BUILD_ID_LIST.add(id);
@@ -60,7 +60,7 @@ public class DriverRecord implements Comparable<DriverRecord> {
         this.majorVersion = majorVersion;
         this.minorVersion = minorVersion;
         this.patchId = patchID;
-        this.buildId = buildId==null || buildId.isBlank() ? "":buildId;
+        this.buildId = buildId == null || buildId.isBlank() ? "" : buildId;
         this.url = url;
     }
 
@@ -68,15 +68,15 @@ public class DriverRecord implements Comparable<DriverRecord> {
     public int compareTo(DriverRecord t) {
         int compareTo = Integer.compare(majorVersion, t.majorVersion);
 
-        if (compareTo==0) {
+        if (compareTo == 0) {
             compareTo = Integer.compare(minorVersion, t.minorVersion);
         }
 
-        if (compareTo==0) {
+        if (compareTo == 0) {
             compareTo = Integer.compare(patchId, t.patchId);
         }
 
-        if (compareTo==0) {
+        if (compareTo == 0) {
             if (buildId.isEmpty() && !t.buildId.isEmpty()) {
                 compareTo = -1;
             } else if (!buildId.isEmpty() && t.buildId.isEmpty()) {
@@ -103,23 +103,23 @@ public class DriverRecord implements Comparable<DriverRecord> {
 
     @Override
     public boolean equals(Object obj) {
-        if (this==obj) {
+        if (this == obj) {
             return true;
         }
-        if (obj==null) {
+        if (obj == null) {
             return false;
         }
-        if (getClass()!=obj.getClass()) {
+        if (getClass() != obj.getClass()) {
             return false;
         }
         final DriverRecord other = (DriverRecord) obj;
-        if (this.majorVersion!=other.majorVersion) {
+        if (this.majorVersion != other.majorVersion) {
             return false;
         }
-        if (this.minorVersion!=other.minorVersion) {
+        if (this.minorVersion != other.minorVersion) {
             return false;
         }
-        if (this.patchId!=other.patchId) {
+        if (this.patchId != other.patchId) {
             return false;
         }
         return Objects.equals(this.buildId, other.buildId);
@@ -131,7 +131,7 @@ public class DriverRecord implements Comparable<DriverRecord> {
                 + minorVersion
                 + "."
                 + patchId
-                + (!buildId.isEmpty() ? ("-" + buildId):"");
+                + (!buildId.isEmpty() ? ("-" + buildId) : "");
     }
 
     @Override

@@ -35,12 +35,12 @@ public class Catalog implements Comparable<Catalog> {
     TreeMap<String, Schema> schemas = new TreeMap<>();
 
     public Catalog(String tableCatalog, String catalogSeparator) {
-        this.tableCatalog = tableCatalog!=null
-                            ? tableCatalog
-                            :"";
-        this.catalogSeparator = catalogSeparator!=null
-                                ? catalogSeparator
-                                :".";
+        this.tableCatalog = tableCatalog != null
+                ? tableCatalog
+                : "";
+        this.catalogSeparator = catalogSeparator != null
+                ? catalogSeparator
+                : ".";
     }
 
     public static Collection<Catalog> getCatalogs(DatabaseMetaData metaData) throws SQLException {
@@ -62,11 +62,11 @@ public class Catalog implements Comparable<Catalog> {
 
         } finally {
             try {
-                if (rs!=null && !rs.isClosed()) {
+                if (rs != null && !rs.isClosed()) {
                     rs.close();
                 }
             } catch (Exception ignore) {
-                //nothing
+                // nothing
             }
         }
         return catalogs;
@@ -83,5 +83,24 @@ public class Catalog implements Comparable<Catalog> {
     @Override
     public int compareTo(Catalog o) {
         return tableCatalog.compareToIgnoreCase(o.tableCatalog);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Catalog)) {
+            return false;
+        }
+
+        Catalog catalog = (Catalog) o;
+
+        return tableCatalog.equals(catalog.tableCatalog);
+    }
+
+    @Override
+    public int hashCode() {
+        return tableCatalog.hashCode();
     }
 }
