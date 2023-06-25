@@ -200,7 +200,6 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             artifactId = 'h2migrationtool'
-
             from components.java
             versionMapping {
                 usage('java-api') {
@@ -211,7 +210,9 @@ publishing {
                 }
             }
             pom {
-                url = 'https://manticore-projects.com/JDBCParquetWriter'
+                name = 'H2 Migration Tool'
+                description = 'CLI and UI Tool for migrating or recovering H2 Databases to newer versions'
+                url = 'https://manticore-projects.com/H2MigrationTool/index.html'
                 licenses {
                     license {
                         name = 'The GNU GENERAL PUBLIC LICENSE, Version 3.0'
