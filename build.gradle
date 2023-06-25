@@ -14,6 +14,7 @@ plugins {
     id "com.diffplug.spotless" version "latest.release"
     id 'pmd'
     id 'checkstyle'
+    id 'com.github.kt3k.coveralls' version "latest.release"
 
     id "org.hidetake.ssh" version "latest.release"
     id "se.bjurr.gitchangelog.git-changelog-gradle-plugin" version "latest.release"
@@ -339,6 +340,10 @@ jacocoTestCoverageVerification {
             }
         }
     }
+}
+
+coveralls {
+    jacocoReportPath 'build/reports/jacoco/test/jacocoTestReport.xml'
 }
 
 tasks.register('gitChangelogTask', GitChangelogTask) {

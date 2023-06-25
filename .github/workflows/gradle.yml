@@ -30,3 +30,6 @@ jobs:
         distribution: 'temurin'
     - name: Build with Gradle
       run: gradle build check
+    - name: Coveralls GitHub Action
+      uses: coverallsapp/github-action@v2
+
