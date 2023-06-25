@@ -77,10 +77,7 @@ public class CLIRecoveryTest {
         properties.setProperty("password", password);
 
         Driver driver =
-                H2MigrationTool.loadDriver(
-                        (versionFrom != null && versionFrom.length() > 0)
-                                ? versionFrom
-                                : "1.3.176");
+                H2MigrationTool.loadDriver(versionFrom);
 
         try (Connection con = driver.connect("jdbc:h2:" + dbFileUriStr, properties);
                 Statement st = con.createStatement()) {
@@ -99,15 +96,11 @@ public class CLIRecoveryTest {
 
         ArrayList<String> args = new ArrayList<>();
 
-        if (versionFrom != null && versionFrom.length() > 0) {
-            args.add("-f");
-            args.add(versionFrom);
-        }
+        args.add("-f");
+        args.add(versionFrom);
 
-        if (databaseName != null && databaseName.length() > 0) {
-            args.add("-d");
-            args.add(h2File.getAbsolutePath());
-        }
+        args.add("-d");
+        args.add(h2File.getAbsolutePath());
 
         // Example:
         // -l ~/h2-libs -f 1.4.200 -t 2.0.201 -d ~/ifrsbox -c ZIP -o VARIABLE_BINARY

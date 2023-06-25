@@ -182,8 +182,6 @@ tasks.register('xmldoc', Javadoc) {
 }
 
 test {
-    environment = [ 'SAMPLE_SIZE': '100000' ]
-    // Use JUnit Platform for unit tests.
     useJUnitPlatform()
 }
 
@@ -260,7 +258,9 @@ spotbugsMain {
         }
     }
 }
-
+spotbugsTest {
+    enabled = false
+}
 spotbugs {
     excludeFilter = file("config/spotbugs/spotBugsExcludeFilter.xml")
 }

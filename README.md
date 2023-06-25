@@ -1,8 +1,11 @@
 # H2MigrationTool [**WebSite**](http://manticore-projects.com/H2MigrationTool/index.html)
+
 A software tool for migration of an old H2 database into a new H2 database format automatically.
 
 ## Usage
+
 Migration
+
 ```man
 java -jar H2MigrationTool.jar -l <arg> -f <arg> -t <arg> -d <arg>
        [-u <arg>] [-p <arg>] [-s <arg>] [-c <arg>] -o <arg> [--force] [-h]
@@ -18,7 +21,9 @@ java -jar H2MigrationTool.jar -l <arg> -f <arg> -t <arg> -d <arg>
     --force                Overwrite files and continue on failure.
  -h,--help                 Show the help message.
 ```
+
 Recovery
+
 ```man
 usage: java -cp H2MigrationTool.jar com.manticore.Recovery [-l <arg>] -f
        <arg> -d <arg> [-h]
@@ -29,6 +34,7 @@ usage: java -cp H2MigrationTool.jar com.manticore.Recovery [-l <arg>] -f
 ```
 
 ## Examples
+
 ```bash
 java -jar H2MigrationTool.jar -l /home/are/Downloads/h2-libs                        \
                               -f 1.4.199 -t 2.0.201 -d /home/are/.manticore/riskbox \
@@ -38,5 +44,7 @@ java -jar H2MigrationTool.jar -l /home/are/Downloads/h2-libs                    
 java -cp H2MigrationTool.jar com.manticore.Recovery                                 \
                               -f 1.3.176 -d /home/are/.manticore/riskbox.h2.db      \
 ```
+
 ## Graphical User Interface
+
 ![image](https://user-images.githubusercontent.com/18080123/120748212-9bea7980-c52c-11eb-96f0-101f0e47e3eb.png)

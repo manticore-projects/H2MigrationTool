@@ -14,11 +14,12 @@
  */
 package com.manticore.h2;
 
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.net.URI;
 import java.sql.Connection;
 import java.sql.Driver;
@@ -26,6 +27,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
  * @author Andreas Reichel <andreas@manticore-projects.com>
@@ -80,15 +82,26 @@ public class SimpleMigrateTestIssue3003 {
         }
     }
 
-    @AfterAll
-    public static void tearDown() throws Exception {
-        for (String s : dbFileUriStr) {
-            URI h2FileUri = new URI(s + ".mv.db");
-            File h2File = new File(h2FileUri);
-            if (h2File.exists() && h2File.canWrite()) {
-                LOGGER.info("Delete H2 database file " + h2File.getCanonicalPath());
-                h2File.delete();
+    @AfterEach
+    public void tearDown() throws Exception {
+        File temp = new File(H2MigrationTool.getTempFolderName());
+        for (String s : new ArrayList<>(dbFileUriStr)) {
+            Pattern pattern =
+                    Pattern.compile(new File(new URI(s)).getName() + ".*\\.(mv.db|sql|zip|gzip)");
+            FilenameFilter filenameFilter = new FilenameFilter() {
+                @Override
+                public boolean accept(File dir, String name) {
+                    return pattern.matcher(name).matches();
+                }
+            };
+            File[] files = temp.listFiles(filenameFilter);
+            if (files != null) {
+                for (File f : files) {
+                    LOGGER.info("Delete file " + f.getCanonicalPath());
+                    boolean delete = f.delete();
+                }
             }
+            dbFileUriStr.remove(s);
         }
     }
 
@@ -108,8 +121,8 @@ public class SimpleMigrateTestIssue3003 {
                                 h2File.getCanonicalPath() +
                                 " to Version 2.0.201");
 
-                tool.migrateAuto("2.0.201", h2File.getCanonicalPath(), "SA", "", "", "QUIRKS_MODE",
-                        "", true, true);
+                tool.migrateAuto("2.0.201", h2File.getCanonicalPath(), "SA", "", "", "",
+                        "QUIRKS_MODE", true, true);
             }
         }
     }

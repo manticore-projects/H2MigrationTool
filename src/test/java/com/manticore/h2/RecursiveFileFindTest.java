@@ -4,11 +4,11 @@
  */
 package com.manticore.h2;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
-import java.io.IOException;
 import java.nio.file.Path;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -20,15 +20,15 @@ public class RecursiveFileFindTest {
 
     @Test
     public void findH2FilesInHome() {
-        try {
-            String homeFolderStr = H2MigrationTool.getAbsoluteFileName("~");
-            LOGGER.info(homeFolderStr);
-
-            for (Path p : H2MigrationTool.findH2Databases(homeFolderStr)) {
-                LOGGER.info(p.toString());
+        Assertions.assertDoesNotThrow(new Executable() {
+            @Override
+            public void execute() throws Throwable {
+                String homeFolderStr = H2MigrationTool.getAbsoluteFileName("~");
+                LOGGER.info(homeFolderStr);
+                for (Path p : H2MigrationTool.findH2Databases(homeFolderStr)) {
+                    LOGGER.info(p.toString());
+                }
             }
-        } catch (IOException ex) {
-            Logger.getLogger(RecursiveFileFindTest.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        });
     }
 }

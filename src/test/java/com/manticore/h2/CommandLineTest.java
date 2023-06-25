@@ -42,7 +42,7 @@ public class CommandLineTest {
                     "\n" +
                     "CREATE TABLE a\n" +
                     "  (\n" +
-                    "     field1 varchar(1)\n" +
+                    "     field1 varchar(1) primary key\n" +
                     "  );\n" +
                     "\n" +
                     "CREATE TABLE b\n" +
@@ -68,10 +68,7 @@ public class CommandLineTest {
 
         File h2File = new File(dbFileUriStr + ".mv.db");
         if (h2File.exists()) {
-            Assertions.fail(
-                    "The H2 Database file " +
-                            h2File.getCanonicalPath() +
-                            "  exists already. Please remove it manually.");
+            boolean delete = h2File.delete();
         }
 
         Properties properties = new Properties();
@@ -80,9 +77,7 @@ public class CommandLineTest {
 
         Driver driver =
                 H2MigrationTool.loadDriver(
-                        (versionFrom != null && versionFrom.length() > 0)
-                                ? versionFrom
-                                : "1.4.200");
+                        versionFrom);
         try (Connection con = driver.connect("jdbc:h2:" + dbFileUriStr, properties);
                 Statement st = con.createStatement()) {
 
@@ -100,30 +95,20 @@ public class CommandLineTest {
 
         ArrayList<String> args = new ArrayList<>();
 
-        if (versionFrom != null && versionFrom.length() > 0) {
-            args.add("-f");
-            args.add(versionFrom);
-        }
+        args.add("-f");
+        args.add(versionFrom);
 
-        if (versionTo != null && versionTo.length() > 0) {
-            args.add("-t");
-            args.add(versionTo);
-        }
+        args.add("-t");
+        args.add(versionTo);
 
-        if (databaseName != null && databaseName.length() > 0) {
-            args.add("-d");
-            args.add(databaseName);
-        }
+        args.add("-d");
+        args.add(databaseName);
 
-        if (compression != null && compression.length() > 0) {
-            args.add("-c");
-            args.add(compression);
-        }
+        args.add("-c");
+        args.add(compression);
 
-        if (options != null && options.length() > 0) {
-            args.add("-o");
-            args.add(options);
-        }
+        args.add("-o");
+        args.add(options);
 
         args.add("--force");
 
@@ -156,30 +141,14 @@ public class CommandLineTest {
 
         ArrayList<String> args = new ArrayList<>();
 
-        if (versionFrom != null && versionFrom.length() > 0) {
-            args.add("-f");
-            args.add(versionFrom);
-        }
+        args.add("-d");
+        args.add(databaseName);
 
-        if (versionTo != null && versionTo.length() > 0) {
-            args.add("-t");
-            args.add(versionTo);
-        }
+        args.add("-c");
+        args.add(compression);
 
-        if (databaseName != null && databaseName.length() > 0) {
-            args.add("-d");
-            args.add(databaseName);
-        }
-
-        if (compression != null && compression.length() > 0) {
-            args.add("-c");
-            args.add(compression);
-        }
-
-        if (options != null && options.length() > 0) {
-            args.add("-o");
-            args.add(options);
-        }
+        args.add("-o");
+        args.add(options);
 
         args.add("--force");
 
