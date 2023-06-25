@@ -17,9 +17,10 @@ H2 Migration Tool
     :alt: Codacy Badge
     :target: https://app.codacy.com/gh/manticore-projects/H2MigrationTool/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade
 
-.. image:: https://coveralls.io/repos/github/manticore-projects/H2MigrationTool/badge.svg?branch=main
+.. image:: https://coveralls.io/repos/github/manticore-projects/H2MigrationTool/badge.svg?branch=master
     :alt: Coveralls Badge
-    :target: https://coveralls.io/github/manticore-projects/H2MigrationTool?branch=main
+    :target: https://coveralls.io/github/manticore-projects/H2MigrationTool?branch=master
+
 
 .. image:: https://img.shields.io/badge/License-GPL-blue
     :alt: License Badge

@@ -184,8 +184,13 @@ tasks.register('xmldoc', Javadoc) {
 
 test {
     useJUnitPlatform()
-}
 
+    jacoco {
+        enabled = true
+        excludes = ["**.bin"]
+        includeNoLocationClasses = false
+    }
+}
 
 publish {
     dependsOn(check)
@@ -308,15 +313,21 @@ spotless {
     }
 }
 
-
 jacocoTestReport {
     dependsOn test // tests are required to run before generating the report
     reports {
-        xml.required = false
+        xml.required = true
         csv.required = false
         html.outputLocation = layout.buildDirectory.dir('reports/jacoco')
     }
+    afterEvaluate {
+        classDirectories = files(classDirectories.files.collect {
+            fileTree(dir: it,
+                    exclude: ['**/**.bin'])
+        })
+    }
 }
+
 jacocoTestCoverageVerification {
     violationRules {
         rule {

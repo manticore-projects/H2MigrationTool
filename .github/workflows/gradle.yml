@@ -29,5 +29,5 @@ jobs:
         java-version: '11'
         distribution: 'temurin'
     - name: Build with Gradle
-      run: gradle build check
+      run: gradle build check coveralls
 
