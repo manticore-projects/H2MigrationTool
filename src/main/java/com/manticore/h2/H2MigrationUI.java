@@ -20,9 +20,12 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.Driver;
@@ -165,6 +168,39 @@ public class H2MigrationUI extends JFrame {
                                         for (Entry<File, String> e : entries) {
                                             textArea.append(e.getKey().getAbsolutePath() + " → "
                                                     + e.getValue() + "\n");
+
+                                            if (Desktop.isDesktopSupported()) {
+                                                Desktop desktop = Desktop.getDesktop();
+                                                if (desktop.isSupported(
+                                                        Desktop.Action.BROWSE_FILE_DIR)) {
+                                                    desktop.browseFileDirectory(e.getKey());
+                                                } else if (desktop
+                                                        .isSupported(Desktop.Action.BROWSE)) {
+                                                    try {
+                                                        desktop.browse(e.getKey().toURI());
+                                                    } catch (IOException ex) {
+                                                        LOGGER.log(Level.SEVERE, ex.getMessage(),
+                                                                ex);
+                                                    }
+                                                } else if (desktop
+                                                        .isSupported(Desktop.Action.OPEN)) {
+                                                    try {
+                                                        desktop.open(e.getKey());
+                                                    } catch (IOException ex) {
+                                                        LOGGER.log(Level.SEVERE, ex.getMessage(),
+                                                                ex);
+                                                    }
+                                                }
+                                            } else {
+                                                LOGGER.warning(
+                                                        "Desktop Actions are not supported.");
+
+                                                JFileChooser chooser = new JFileChooser(e.getKey());
+                                                chooser.setDialogType(JFileChooser.SAVE_DIALOG);
+                                                chooser.setSelectedFile(e.getKey());
+                                                chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+                                                chooser.showSaveDialog(H2MigrationUI.this);
+                                            }
                                         }
                                     }
 
@@ -324,8 +360,41 @@ public class H2MigrationUI extends JFrame {
                                     @Override
                                     protected void process(List<Entry<File, String>> entries) {
                                         for (Entry<File, String> e : entries) {
-                                            textArea.append(e.getKey().getAbsolutePath() + " → "
+                                            textArea.append(e.getKey().getAbsolutePath() + "\n \uD83E\uDC32 "
                                                     + e.getValue() + "\n");
+
+                                            if (Desktop.isDesktopSupported()) {
+                                                Desktop desktop = Desktop.getDesktop();
+                                                 if (desktop.isSupported(
+                                                        Desktop.Action.BROWSE_FILE_DIR)) {
+                                                    desktop.browseFileDirectory(e.getKey());
+                                                } else if (desktop
+                                                        .isSupported(Desktop.Action.BROWSE)) {
+                                                    try {
+                                                        desktop.browse(e.getKey().toURI());
+                                                    } catch (IOException ex) {
+                                                        LOGGER.log(Level.SEVERE, ex.getMessage(),
+                                                                ex);
+                                                    }
+                                                } else if (desktop
+                                                        .isSupported(Desktop.Action.OPEN)) {
+                                                    try {
+                                                        desktop.open(e.getKey());
+                                                    } catch (IOException ex) {
+                                                        LOGGER.log(Level.SEVERE, ex.getMessage(),
+                                                                ex);
+                                                    }
+                                                }
+                                            } else {
+                                                LOGGER.warning(
+                                                        "Desktop Actions are not supported.");
+
+                                                JFileChooser chooser = new JFileChooser(e.getKey());
+                                                chooser.setDialogType(JFileChooser.SAVE_DIALOG);
+                                                chooser.setSelectedFile(e.getKey());
+                                                chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+                                                chooser.showSaveDialog(H2MigrationUI.this);
+                                            }
                                         }
                                     }
 
@@ -350,12 +419,8 @@ public class H2MigrationUI extends JFrame {
                                             } else {
                                                 textArea.append("\nReady without errors.");
                                             }
-                                        } catch (InterruptedException ex) {
-                                            Logger.getLogger(H2MigrationUI.class.getName())
-                                                    .log(Level.SEVERE, null, ex);
-                                        } catch (ExecutionException ex) {
-                                            Logger.getLogger(H2MigrationUI.class.getName())
-                                                    .log(Level.SEVERE, null, ex);
+                                        } catch (InterruptedException | ExecutionException ex) {
+                                            LOGGER.log(Level.SEVERE, null, ex);
                                         }
                                     }
                                 };
@@ -686,7 +751,7 @@ public class H2MigrationUI extends JFrame {
         return dialog;
     }
 
-    public static void executeAndWait(SwingWorker worker, JDialog dialog) {
+    public static void executeAndWait(SwingWorker<?, ?> worker, JDialog dialog) {
         worker.addPropertyChangeListener(new SwingWorkerCompletionWaiter(dialog));
         worker.execute();
 
@@ -815,6 +880,14 @@ public class H2MigrationUI extends JFrame {
         setLayout(new BorderLayout(6, 6));
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                LOGGER.info("Exiting the VM when Frame as been closed.");
+                System.exit(0);
+            }
+        });
+
         Color selectedTextBackGround =
                 UIManager.getLookAndFeel().getDefaults()
                         .getColor("Table[Enabled+Selected].textBackground");
@@ -905,6 +978,9 @@ public class H2MigrationUI extends JFrame {
         databaseFileActionsBar.add(verifyDatabaseFileAction).setHideActionText(true);
         centerNorthPanel.add(databaseFileActionsBar, constraints);
 
+        JLabel scriptLabel = new JLabel(getLabel("SQL Script Files", 2));
+        scriptLabel.setHorizontalAlignment(JLabel.TRAILING);
+
         constraints.gridy++;
         constraints.gridx = 0;
         constraints.gridwidth = 1;
@@ -913,7 +989,7 @@ public class H2MigrationUI extends JFrame {
         constraints.anchor = GridBagConstraints.NORTHEAST;
         constraints.weighty = 100;
         databaseFileLabel.setHorizontalAlignment(JLabel.TRAILING);
-        centerNorthPanel.add(new JLabel(getLabel("SQL Script Files", 2)), constraints);
+        centerNorthPanel.add(scriptLabel, constraints);
 
         // connectionParameterField
         constraints.insets.left = 6;
@@ -1075,6 +1151,7 @@ public class H2MigrationUI extends JFrame {
 
         add(southPanel, BorderLayout.SOUTH);
 
+        setPreferredSize(new Dimension(480, 720));
         pack();
         setMinimumSize(getSize());
         setVisible(visible);

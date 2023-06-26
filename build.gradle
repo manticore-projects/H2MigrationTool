@@ -30,10 +30,10 @@ repositories {
 }
 
 def getVersion = { boolean considerSnapshot ->
-    int major = 0
-    int minor = 0
-    int patch = 0
-    int build = 0
+    Integer major = 0
+    Integer minor = 0
+    Integer patch = 0
+    Integer build = 0
     String commit = ""
     String snapshot = ""
     new ByteArrayOutputStream().withStream { os ->
@@ -62,13 +62,14 @@ def getVersion = { boolean considerSnapshot ->
 
         if (considerSnapshot && ( versionStr.endsWith('SNAPSHOT') || build>0) ) {
             minor++
-            patch = 0
+            if (patch!=null) patch = 0
             snapshot =  "-SNAPSHOT"
         }
 
-        println("Derived Version: $versionStr --> ${major}.${minor}${snapshot}")
     }
-    return "${major}.${minor}${snapshot}"
+    return patch!=null
+            ? "${major}.${minor}.${patch}${snapshot}"
+            : "${major}.${minor}${snapshot}"
 }
 version = getVersion(true)
 description = 'Graphical User Interface for Migrating or Recovering H2 Databases from older to newer Versions'
