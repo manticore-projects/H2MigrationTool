@@ -21,6 +21,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.io.FilenameUtils;
 
 import javax.swing.*;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
@@ -238,7 +239,7 @@ public class H2MigrationTool {
                 // so we have to extract a local copy first
                 // investigate, if the is a better solution, e. g. a special ClassLoader
                 if (resourceUri.getScheme().equals("jar")) {
-                    String fileName = url.getFile();
+                    String fileName = FilenameUtils.getName(url.getPath());
                     File tmpFile = new File(System.getProperty("java.io.tmpdir"), fileName);
                     tmpFile.deleteOnExit();
 

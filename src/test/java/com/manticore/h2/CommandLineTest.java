@@ -14,10 +14,15 @@
  */
 package com.manticore.h2;
 
+import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.Statement;
@@ -159,5 +164,14 @@ public class CommandLineTest {
         } catch (Exception ex) {
             Assertions.fail(ex.getMessage());
         }
+    }
+
+    @Test
+    void testDriverFileCopy() throws URISyntaxException, MalformedURLException {
+        String uriStr = "file:/home/are/Documents/src/H2MigrationTool/build/libs/H2MigrationTool-1.4-SNAPSHOT-all.jar!/drivers/h2-1.3.176.bin";
+        URI uri = new URI(uriStr);
+        URL url = uri.toURL();
+
+        Assertions.assertEquals("h2-1.3.176.bin", FilenameUtils.getName(url.getPath()));
     }
 }
