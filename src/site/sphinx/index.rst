@@ -9,6 +9,7 @@ H2 Migration Tool
    usage
    Changelog <changelog.md>
    Java API <javadoc.rst>
+   Demo <demo.rst>
 
 .. image:: https://badgen.net/maven/v/maven-central/com.manticore-projects.jdbc/H2MigrationTool
     :alt: Maven Badge
