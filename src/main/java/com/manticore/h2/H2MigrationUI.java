@@ -171,21 +171,21 @@ public class H2MigrationUI extends JFrame {
 
                                             if (Desktop.isDesktopSupported()) {
                                                 Desktop desktop = Desktop.getDesktop();
-                                                if (desktop.isSupported(
+                                                if (desktop
+                                                        .isSupported(Desktop.Action.OPEN)) {
+                                                    try {
+                                                        desktop.open(e.getKey());
+                                                    } catch (IOException ex) {
+                                                        LOGGER.log(Level.SEVERE, ex.getMessage(),
+                                                                ex);
+                                                    }
+                                                } else if (desktop.isSupported(
                                                         Desktop.Action.BROWSE_FILE_DIR)) {
                                                     desktop.browseFileDirectory(e.getKey());
                                                 } else if (desktop
                                                         .isSupported(Desktop.Action.BROWSE)) {
                                                     try {
                                                         desktop.browse(e.getKey().toURI());
-                                                    } catch (IOException ex) {
-                                                        LOGGER.log(Level.SEVERE, ex.getMessage(),
-                                                                ex);
-                                                    }
-                                                } else if (desktop
-                                                        .isSupported(Desktop.Action.OPEN)) {
-                                                    try {
-                                                        desktop.open(e.getKey());
                                                     } catch (IOException ex) {
                                                         LOGGER.log(Level.SEVERE, ex.getMessage(),
                                                                 ex);
@@ -198,7 +198,8 @@ public class H2MigrationUI extends JFrame {
                                                 JFileChooser chooser = new JFileChooser(e.getKey());
                                                 chooser.setDialogType(JFileChooser.SAVE_DIALOG);
                                                 chooser.setSelectedFile(e.getKey());
-                                                chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+                                                chooser.setFileSelectionMode(
+                                                        JFileChooser.FILES_ONLY);
                                                 chooser.showSaveDialog(H2MigrationUI.this);
                                             }
                                         }
@@ -360,26 +361,27 @@ public class H2MigrationUI extends JFrame {
                                     @Override
                                     protected void process(List<Entry<File, String>> entries) {
                                         for (Entry<File, String> e : entries) {
-                                            textArea.append(e.getKey().getAbsolutePath() + "\n \uD83E\uDC32 "
+                                            textArea.append(e.getKey().getAbsolutePath()
+                                                    + "\n \uD83E\uDC32 "
                                                     + e.getValue() + "\n");
 
                                             if (Desktop.isDesktopSupported()) {
                                                 Desktop desktop = Desktop.getDesktop();
-                                                 if (desktop.isSupported(
+                                                if (desktop
+                                                        .isSupported(Desktop.Action.OPEN)) {
+                                                    try {
+                                                        desktop.open(e.getKey());
+                                                    } catch (IOException ex) {
+                                                        LOGGER.log(Level.SEVERE, ex.getMessage(),
+                                                                ex);
+                                                    }
+                                                } else if (desktop.isSupported(
                                                         Desktop.Action.BROWSE_FILE_DIR)) {
                                                     desktop.browseFileDirectory(e.getKey());
                                                 } else if (desktop
                                                         .isSupported(Desktop.Action.BROWSE)) {
                                                     try {
                                                         desktop.browse(e.getKey().toURI());
-                                                    } catch (IOException ex) {
-                                                        LOGGER.log(Level.SEVERE, ex.getMessage(),
-                                                                ex);
-                                                    }
-                                                } else if (desktop
-                                                        .isSupported(Desktop.Action.OPEN)) {
-                                                    try {
-                                                        desktop.open(e.getKey());
                                                     } catch (IOException ex) {
                                                         LOGGER.log(Level.SEVERE, ex.getMessage(),
                                                                 ex);
@@ -392,7 +394,8 @@ public class H2MigrationUI extends JFrame {
                                                 JFileChooser chooser = new JFileChooser(e.getKey());
                                                 chooser.setDialogType(JFileChooser.SAVE_DIALOG);
                                                 chooser.setSelectedFile(e.getKey());
-                                                chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+                                                chooser.setFileSelectionMode(
+                                                        JFileChooser.FILES_ONLY);
                                                 chooser.showSaveDialog(H2MigrationUI.this);
                                             }
                                         }
