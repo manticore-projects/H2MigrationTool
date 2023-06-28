@@ -11,8 +11,9 @@ H2 Migration Tool
    Java API <javadoc.rst>
    Demo <demo.rst>
 
-.. image:: https://badgen.net/maven/v/maven-central/com.manticore-projects.jdbc/H2MigrationTool
+.. image:: https://badgen.net/maven/v/maven-central/com.manticore-projects.tools/h2migrationtool
     :alt: Maven Badge
+    :target: https://mvnrepository.com/artifact/com.manticore-projects.tools/h2migrationtool
 
 .. image:: https://app.codacy.com/project/badge/Grade/f9024986ff4c44199119b3f63ad18f73
     :alt: Codacy Badge
