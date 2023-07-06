@@ -166,7 +166,7 @@ public class H2MigrationUI extends JFrame {
                                     @Override
                                     protected void process(List<Entry<File, String>> entries) {
                                         for (Entry<File, String> e : entries) {
-                                            textArea.append(e.getKey().getAbsolutePath() + " → "
+                                            textArea.append(e.getKey().getAbsolutePath() + " -> "
                                                     + e.getValue() + "\n");
 
                                             if (Desktop.isDesktopSupported()) {
