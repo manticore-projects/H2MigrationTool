@@ -325,6 +325,9 @@ public class H2MigrationTool {
                 loader.loadClass("org.h2.index.MetaIndex");
                 loader.loadClass("org.h2.api.ErrorCode");
 
+                // needed since H2 2.2.220
+                loader.loadClass("org.h2.engine.OnExitDatabaseCloser");
+
             } catch (Exception ex) {
                 LOGGER.log(Level.SEVERE, "Failed to load additional classes.", ex);
             }
