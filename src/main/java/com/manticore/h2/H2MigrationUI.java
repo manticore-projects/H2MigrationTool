@@ -15,6 +15,7 @@
 package com.manticore.h2;
 
 import com.manticore.h2.H2MigrationTool.ScriptResult;
+import org.webswing.toolkit.api.WebswingUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -33,7 +34,9 @@ import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.TreeMap;
@@ -121,18 +124,18 @@ public class H2MigrationUI extends JFrame {
                         final JTextArea textArea = new JTextArea(24, 72);
                         textArea.setFont(MONOSPACED_FONT);
 
-                        SwingWorker<List<File>, Entry<File, String>> worker =
-                                new SwingWorker<List<File>, Entry<File, String>>() {
+                        SwingWorker<Map<File, Exception>, Entry<File, String>> worker =
+                                new SwingWorker<>() {
 
                                     @Override
-                                    protected List<File> doInBackground() throws Exception {
+                                    protected Map<File, Exception> doInBackground() throws Exception {
                                         H2MigrationTool tool = new H2MigrationTool();
                                         H2MigrationTool.readDriverRecords();
 
                                         DriverRecord from = fromVersionList.getSelectedValue();
 
                                         ArrayList<File> databaseFiles = new ArrayList<>();
-                                        ArrayList<File> failedDatabaseFiles = new ArrayList<>();
+                                        HashMap<File, Exception> failedDatabaseFiles = new HashMap<>();
 
                                         if (selectedIndices.length > 0) {
                                             for (int i : selectedIndices) {
@@ -157,7 +160,7 @@ public class H2MigrationUI extends JFrame {
                                                 LOGGER.log(Level.WARNING,
                                                         "Failed to recover " + f.getAbsolutePath(),
                                                         ex);
-                                                failedDatabaseFiles.add(f);
+                                                failedDatabaseFiles.put(f, ex);
                                             }
                                         }
                                         return failedDatabaseFiles;
@@ -166,13 +169,13 @@ public class H2MigrationUI extends JFrame {
                                     @Override
                                     protected void process(List<Entry<File, String>> entries) {
                                         for (Entry<File, String> e : entries) {
-                                            textArea.append(e.getKey().getAbsolutePath() + " → "
+                                            textArea.append(e.getKey().getAbsolutePath() + " -> "
                                                     + e.getValue() + "\n");
 
                                             if (Desktop.isDesktopSupported()) {
                                                 Desktop desktop = Desktop.getDesktop();
-                                                if (desktop
-                                                        .isSupported(Desktop.Action.OPEN)) {
+                                                if (WebswingUtil.isWebswing()
+                                                    && desktop.isSupported(Desktop.Action.OPEN)) {
                                                     try {
                                                         desktop.open(e.getKey());
                                                     } catch (IOException ex) {
@@ -183,9 +186,9 @@ public class H2MigrationUI extends JFrame {
                                                         Desktop.Action.BROWSE_FILE_DIR)) {
                                                     desktop.browseFileDirectory(e.getKey());
                                                 } else if (desktop
-                                                        .isSupported(Desktop.Action.BROWSE)) {
+                                                        .isSupported(Desktop.Action.OPEN)) {
                                                     try {
-                                                        desktop.browse(e.getKey().toURI());
+                                                        desktop.open(e.getKey().getParentFile());
                                                     } catch (IOException ex) {
                                                         LOGGER.log(Level.SEVERE, ex.getMessage(),
                                                                 ex);
@@ -208,30 +211,31 @@ public class H2MigrationUI extends JFrame {
                                     @Override
                                     protected void done() {
                                         try {
-                                            List<File> files = get();
+                                            Map<File, Exception> files = get();
                                             int n = files.size();
                                             if (n > 0) {
                                                 int[] selectedIndices = new int[n];
                                                 textArea.append(
-                                                        "\n" + n + " have not been recovered:\n");
+                                                        "\n" + n + " not recovered:\n");
 
                                                 int i = 0;
-                                                for (File f : files) {
-                                                    textArea.append(f.getAbsolutePath() + "\n");
+                                                for (Entry<File, Exception> f : files.entrySet()) {
+                                                    textArea.append(
+                                                            f.getKey().getAbsolutePath()
+                                                            + "\n -> " + f.getValue().getLocalizedMessage()
+                                                            + "\n " + f.getValue().getCause().getLocalizedMessage()
+                                                    );
                                                     selectedIndices[i++] =
                                                             databaseFileModel.indexOf(f);
                                                 }
                                                 databaseFileList
                                                         .setSelectedIndices(selectedIndices);
-                                            } else {
+                                            }
+                                            else {
                                                 textArea.append("\nReady without errors.");
                                             }
-                                        } catch (InterruptedException ex) {
-                                            Logger.getLogger(H2MigrationUI.class.getName())
-                                                    .log(Level.SEVERE, null, ex);
-                                        } catch (ExecutionException ex) {
-                                            Logger.getLogger(H2MigrationUI.class.getName())
-                                                    .log(Level.SEVERE, null, ex);
+                                        } catch (InterruptedException | ExecutionException ex) {
+                                            LOGGER.log(Level.SEVERE, null, ex);
                                         }
                                     }
                                 };
@@ -272,17 +276,13 @@ public class H2MigrationUI extends JFrame {
                         final JTextArea textArea = new JTextArea(24, 72);
                         textArea.setFont(MONOSPACED_FONT);
 
-                        SwingWorker<List<File>, Entry<File, String>> worker =
-                                new SwingWorker<List<File>, Entry<File, String>>() {
+                        SwingWorker<Map<File, Exception>, Entry<File, String>> worker =
+                                new SwingWorker<>() {
 
                                     @Override
-                                    protected List<File> doInBackground() throws Exception {
+                                    protected Map<File, Exception> doInBackground() throws Exception {
                                         String connectionParameters =
                                                 connectionParameterField.getText();
-
-                                        Properties properties = new Properties();
-                                        properties.setProperty("user", usernameField.getText());
-                                        properties.setProperty("password", passwordField.getText());
 
                                         H2MigrationTool tool = new H2MigrationTool();
                                         H2MigrationTool.readDriverRecords();
@@ -291,13 +291,14 @@ public class H2MigrationUI extends JFrame {
                                         DriverRecord to = toVersionList.getSelectedValue();
 
                                         ArrayList<File> databaseFiles = new ArrayList<>();
-                                        ArrayList<File> failedDatabaseFiles = new ArrayList<>();
+                                        HashMap<File, Exception> failedDatabaseFiles = new HashMap<>();
 
                                         if (selectedIndices.length > 0) {
                                             for (int i : selectedIndices) {
                                                 databaseFiles.add(databaseFileModel.get(i));
                                             }
-                                        } else {
+                                        }
+                                        else {
                                             databaseFiles.addAll(
                                                     Collections.list(databaseFileModel.elements()));
                                         }
@@ -305,34 +306,40 @@ public class H2MigrationUI extends JFrame {
                                         for (final File f : databaseFiles) {
                                             try {
                                                 String versionFrom =
-                                                        from != null ? from.getVersion() : "";
+                                                        from != null
+                                                        ? from.getVersion()
+                                                        : "";
                                                 String versionTo =
-                                                        to != null ? to.getVersion() : "";
+                                                        to != null
+                                                        ? to.getVersion()
+                                                        : "";
 
                                                 String username = usernameField.getText();
                                                 String password = passwordField.getText();
 
                                                 String upgradeOptions =
-                                                        quirksModeBox.isSelected() ? "QUIRKS_MODE"
-                                                                : "";
+                                                        quirksModeBox.isSelected()
+                                                        ? "QUIRKS_MODE"
+                                                        : "";
                                                 if (varbinaryBox.isSelected()) {
                                                     upgradeOptions +=
                                                             upgradeOptions.isEmpty()
-                                                                    ? "VARIABLE_BINARY"
-                                                                    : " VARIABLE_BINARY";
+                                                            ? "VARIABLE_BINARY"
+                                                            : " VARIABLE_BINARY";
                                                 }
 
                                                 String compression =
                                                         (String) compressionBox.getSelectedItem();
                                                 if (compression != null
-                                                        && compression.length() > 0) {
+                                                    && compression.length() > 0) {
                                                     compression = "COMPRESSION " + compression;
                                                 }
 
                                                 boolean overwrite = overwriteBox.isSelected();
 
                                                 ScriptResult result =
-                                                        tool.migrate(versionFrom,
+                                                        tool.migrate(
+                                                                versionFrom,
                                                                 versionTo,
                                                                 f.getAbsolutePath(),
                                                                 username,
@@ -342,17 +349,21 @@ public class H2MigrationUI extends JFrame {
                                                                 upgradeOptions,
                                                                 overwrite,
                                                                 overwrite,
-                                                                connectionParameters);
+                                                                connectionParameters
+                                                        );
 
-                                                publish(new AbstractMap.SimpleEntry<>(f,
-                                                        result.scriptFileName));
+                                                publish(new AbstractMap.SimpleEntry<>(
+                                                        f,
+                                                        result.scriptFileName
+                                                ));
 
                                             } catch (Exception ex) {
-                                                LOGGER.log(Level.WARNING,
+                                                LOGGER.log(
+                                                        Level.WARNING,
                                                         "Failed to migrate " + f.getAbsolutePath(),
-                                                        ex);
-
-                                                failedDatabaseFiles.add(f);
+                                                        ex
+                                                );
+                                                failedDatabaseFiles.put(f, ex);
                                             }
                                         }
                                         return failedDatabaseFiles;
@@ -362,32 +373,34 @@ public class H2MigrationUI extends JFrame {
                                     protected void process(List<Entry<File, String>> entries) {
                                         for (Entry<File, String> e : entries) {
                                             textArea.append(e.getKey().getAbsolutePath()
-                                                    + "\n \uD83E\uDC32 "
-                                                    + e.getValue() + "\n");
+                                                            + "\n -> "
+                                                            + e.getValue() + "\n");
 
                                             if (Desktop.isDesktopSupported()) {
                                                 Desktop desktop = Desktop.getDesktop();
-                                                if (desktop
-                                                        .isSupported(Desktop.Action.OPEN)) {
+                                                if (WebswingUtil.isWebswing()
+                                                    && desktop.isSupported(Desktop.Action.OPEN)) {
                                                     try {
                                                         desktop.open(e.getKey());
                                                     } catch (IOException ex) {
                                                         LOGGER.log(Level.SEVERE, ex.getMessage(),
-                                                                ex);
+                                                                   ex
+                                                        );
                                                     }
                                                 } else if (desktop.isSupported(
                                                         Desktop.Action.BROWSE_FILE_DIR)) {
                                                     desktop.browseFileDirectory(e.getKey());
-                                                } else if (desktop
-                                                        .isSupported(Desktop.Action.BROWSE)) {
+                                                } else if (desktop.isSupported(Desktop.Action.OPEN)) {
                                                     try {
-                                                        desktop.browse(e.getKey().toURI());
+                                                        desktop.open(e.getKey().getParentFile());
                                                     } catch (IOException ex) {
                                                         LOGGER.log(Level.SEVERE, ex.getMessage(),
-                                                                ex);
+                                                                   ex
+                                                        );
                                                     }
                                                 }
-                                            } else {
+                                            }
+                                            else {
                                                 LOGGER.warning(
                                                         "Desktop Actions are not supported.");
 
@@ -404,22 +417,27 @@ public class H2MigrationUI extends JFrame {
                                     @Override
                                     protected void done() {
                                         try {
-                                            List<File> files = get();
+                                            Map<File, Exception> files = get();
                                             int n = files.size();
                                             if (n > 0) {
                                                 int[] selectedIndices = new int[n];
                                                 textArea.append(
-                                                        "\n" + n + " have not been migrated:\n");
+                                                        "\n" + n + " not migrated:\n");
 
                                                 int i = 0;
-                                                for (File f : files) {
-                                                    textArea.append(f.getAbsolutePath() + "\n");
+                                                for (Entry<File, Exception> f : files.entrySet()) {
+                                                    textArea.append(
+                                                            f.getKey().getAbsolutePath()
+                                                            + "\n -> " + f.getValue().getLocalizedMessage()
+                                                            + "\n " + f.getValue().getCause().getLocalizedMessage()
+                                                    );
                                                     selectedIndices[i++] =
                                                             databaseFileModel.indexOf(f);
                                                 }
                                                 databaseFileList
                                                         .setSelectedIndices(selectedIndices);
-                                            } else {
+                                            }
+                                            else {
                                                 textArea.append("\nReady without errors.");
                                             }
                                         } catch (InterruptedException | ExecutionException ex) {
@@ -921,10 +939,12 @@ public class H2MigrationUI extends JFrame {
         listModel.addAll(H2MigrationTool.getDriverRecords());
 
         fromVersionList.setModel(listModel);
+        fromVersionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         fromVersionList.setSelectedValue(
                 H2MigrationTool.getDriverRecord(H2MigrationTool.getDriverRecords(), 1, 4), true);
 
         toVersionList.setModel(listModel);
+        toVersionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         toVersionList.setSelectedValue(
                 H2MigrationTool.getDriverRecord(H2MigrationTool.getDriverRecords(), 2, 0), true);
 
