@@ -490,8 +490,8 @@ public class H2MigrationUI extends JFrame {
 
                     if (result == JOptionPane.YES_OPTION) {
                         TreeMap<File, Collection<Recommendation>> recommendations = new TreeMap<>();
-                        SwingWorker worker =
-                                new SwingWorker() {
+                        SwingWorker<Object, Void> worker =
+                                new SwingWorker<>() {
                                     @Override
                                     protected Object doInBackground() throws Exception {
                                         Properties properties = new Properties();
@@ -601,7 +601,7 @@ public class H2MigrationUI extends JFrame {
                             if (selectedFile.isDirectory()) {
                                 try {
                                     SwingWorker<Collection<Path>, Path> worker =
-                                            new SwingWorker<Collection<Path>, Path>() {
+                                            new SwingWorker<>() {
                                                 @Override
                                                 protected Collection<Path> doInBackground()
                                                         throws Exception {
@@ -616,12 +616,8 @@ public class H2MigrationUI extends JFrame {
                                     for (Path p : h2DatabasePaths) {
                                         databaseFileModel.addElement(p.toFile());
                                     }
-                                } catch (InterruptedException ex) {
-                                    Logger.getLogger(H2MigrationUI.class.getName())
-                                            .log(Level.SEVERE, null, ex);
-                                } catch (ExecutionException ex) {
-                                    Logger.getLogger(H2MigrationUI.class.getName())
-                                            .log(Level.SEVERE, null, ex);
+                                } catch (Exception ex) {
+                                    exceptions.add(ex);
                                 }
                             } else {
                                 LOGGER.info(selectedFile.getAbsolutePath());
@@ -670,7 +666,7 @@ public class H2MigrationUI extends JFrame {
                             if (selectedFile.isDirectory()) {
                                 try {
                                     SwingWorker<Collection<Path>, Path> worker =
-                                            new SwingWorker<Collection<Path>, Path>() {
+                                            new SwingWorker<>() {
                                                 @Override
                                                 protected Collection<Path> doInBackground()
                                                         throws Exception {
@@ -748,36 +744,6 @@ public class H2MigrationUI extends JFrame {
 
     public H2MigrationUI() {
         super("H2 Database Migration Tool");
-    }
-
-    public static JDialog getWorkerWaitDialog(Component component) {
-        Window windowAncestor = SwingUtilities.getWindowAncestor(component);
-        JOptionPane p =
-                new JOptionPane(
-                        "Please wait while the data are collected in the background.\nThis will take a few minutes...",
-                        JOptionPane.INFORMATION_MESSAGE,
-                        JOptionPane.DEFAULT_OPTION,
-                        DIALOG_INFORMATION_64_ICON);
-
-        JDialog dialog =
-                new JDialog(windowAncestor, "Operation in progress",
-                        Dialog.ModalityType.APPLICATION_MODAL);
-
-        dialog.setLocationByPlatform(true);
-        dialog.setAlwaysOnTop(true);
-        dialog.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-        dialog.add(p);
-        dialog.pack();
-
-        return dialog;
-    }
-
-    public static void executeAndWait(SwingWorker<?, ?> worker, JDialog dialog) {
-        worker.addPropertyChangeListener(new SwingWorkerCompletionWaiter(dialog));
-        worker.execute();
-
-        // the dialog will be visible until the SwingWorker is done
-        dialog.setVisible(true);
     }
 
     public static void executeAndWait(SwingWorker<?, ?> worker, Component component,
@@ -886,7 +852,7 @@ public class H2MigrationUI extends JFrame {
         dialog.setVisible(true);
     }
 
-    private final String getLabel(String label, int annotation) {
+    private String getLabel(String label, int annotation) {
         switch (annotation) {
             case 1:
                 return "<html><u>" + label + "</u><font color='red'>*</font>:</html>";
