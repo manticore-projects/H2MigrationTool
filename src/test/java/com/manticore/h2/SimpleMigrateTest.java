@@ -88,6 +88,8 @@ public class SimpleMigrateTest {
                 for (String sqlStr : DDL_STR.split(";")) {
                     st.executeUpdate(sqlStr);
                 }
+            } finally {
+                H2MigrationTool.unloadDriver(driver);
             }
         }
     }
@@ -116,8 +118,8 @@ public class SimpleMigrateTest {
     }
 
     @Test
-    public void autoConvertTest_002000201() throws Exception {
-
+    public void autoConvertTo201LatestTest() throws Exception {
+        String version = "2.0.201";
         H2MigrationTool tool = new H2MigrationTool();
         H2MigrationTool.readDriverRecords();
 
@@ -129,16 +131,16 @@ public class SimpleMigrateTest {
                 LOGGER.info(
                         "Will Auto-Convert H2 database file " +
                                 h2File.getCanonicalPath() +
-                                " to Version 2.0.201");
+                                " to Version " + version);
 
-                tool.migrateAuto("2.0.201", h2File.getCanonicalPath(), "SA", "", "", "", "", true,
+                tool.migrateAuto(version, h2File.getCanonicalPath(), "SA", "", "", "", "", true,
                         true);
             }
         }
     }
 
     @Test
-    public void autoConvertTest_Latest() throws Exception {
+    public void autoConvertToLatestTest() throws Exception {
 
         H2MigrationTool tool = new H2MigrationTool();
         H2MigrationTool.readDriverRecords("");
@@ -156,18 +158,5 @@ public class SimpleMigrateTest {
                 tool.migrateAuto(h2File.getCanonicalPath());
             }
         }
-    }
-
-    @Test
-    public void autoConvertTest_Folder() throws Exception {
-
-        H2MigrationTool tool = new H2MigrationTool();
-        H2MigrationTool.readDriverRecords("");
-        LOGGER.info(
-                "Will Auto-Convert H2 database file " +
-                        "/tmp" +
-                        " to Latest Available H2 version");
-
-        tool.migrateAuto("/tmp");
     }
 }

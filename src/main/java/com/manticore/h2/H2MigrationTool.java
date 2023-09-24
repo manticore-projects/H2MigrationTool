@@ -166,12 +166,16 @@ public class H2MigrationTool {
             FileFilter... fileFilters) throws IOException {
         ArrayList<Path> fileNames = new ArrayList<>();
         try (Stream<Path> paths = Files.find(parentPath, depth, (path, attr) -> {
-            if (attr.isRegularFile()) {
-                for (FileFilter fileFilter : fileFilters) {
-                    if (fileFilter.accept(path.toFile())) {
-                        return true;
+            try {
+                if (attr.isRegularFile()) {
+                    for (FileFilter fileFilter : fileFilters) {
+                        if (fileFilter.accept(path.toFile())) {
+                            return true;
+                        }
                     }
                 }
+            } catch (RuntimeException ex) {
+                LOGGER.log(Level.FINE, "Failed to traverse " + parentPath.toString(), ex);
             }
             return false;
         })) {
@@ -230,7 +234,7 @@ public class H2MigrationTool {
         }
 
         for (Path path : findFilesInPathRecursively(myPath, 1, "h2", ".bin")) {
-            LOGGER.info("Found H2 library " + path);
+            LOGGER.fine("Found H2 library " + path);
             try {
                 URI resourceUri = path.toUri();
                 URL url = path.toUri().toURL();
@@ -282,19 +286,21 @@ public class H2MigrationTool {
             Properties properties = new Properties();
             properties.setProperty("user", "sa");
             properties.setProperty("password", "");
-            Connection connection =
-                    AccessController.doPrivileged((PrivilegedExceptionAction<Connection>) () -> {
-                        try (URLClassLoader loader = new URLClassLoader(new URL[] {url},
-                                H2MigrationTool.class.getClassLoader())) {
-                            Class<?> classToLoad = Class.forName("org.h2.Driver", true, loader);
-                            Method method = classToLoad.getDeclaredMethod("load");
-                            Object instance = classToLoad.getDeclaredConstructor().newInstance();
-                            method.invoke(instance);
 
-                            Driver driver = getDriverFromInstance(loader, instance);
-                            return driver.connect("jdbc:h2:mem:test", properties);
-                        }
-                    });
+            AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
+                try (URLClassLoader loader = new URLClassLoader(
+                        new URL[] {url},
+                        ClassLoader.getPlatformClassLoader())) {
+                    Class<?> classToLoad = loader.loadClass("org.h2.Driver");
+                    Method method = classToLoad.getDeclaredMethod("load");
+                    Driver driver = (Driver) method.invoke(null);
+                    try (Connection conn = driver.connect("jdbc:h2:mem:test", properties)) {
+                        // nothing for now
+                    }
+                    unloadDriver(driver);
+                    return null;
+                }
+            });
 
             Matcher matcher = VERSION_PATTERN.matcher(url.getFile());
             if (matcher.find()) {
@@ -305,34 +311,11 @@ public class H2MigrationTool {
                 DriverRecord driverRecord =
                         new DriverRecord(majorVersion, minorVersion, patchId, buildId, url);
                 DRIVER_RECORDS.add(driverRecord);
-                LOGGER.info(driverRecord.toString());
+                LOGGER.fine(driverRecord.toString());
             }
-            connection.close();
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Failed to load the driver " + url.toString(), ex);
         }
-    }
-
-    private static Driver getDriverFromInstance(ClassLoader loader, Object instance) {
-        Driver driver = (Driver) instance;
-        if (driver.getMajorVersion() == 2) {
-            // @fixme: for unknown reason, we need to load some classes explicitly with 2.0.201
-            // only
-            try {
-                loader.loadClass("org.h2.table.InformationSchemaTable");
-                loader.loadClass("org.h2.mvstore.MVMap$2");
-                loader.loadClass("org.h2.mvstore.MVMap$2$1");
-                loader.loadClass("org.h2.index.MetaIndex");
-                loader.loadClass("org.h2.api.ErrorCode");
-
-                // needed since H2 2.2.220
-                loader.loadClass("org.h2.engine.OnExitDatabaseCloser");
-
-            } catch (Exception ex) {
-                LOGGER.log(Level.SEVERE, "Failed to load additional classes.", ex);
-            }
-        }
-        return driver;
     }
 
     public static Driver loadDriver(String version) throws Exception {
@@ -354,16 +337,25 @@ public class H2MigrationTool {
 
     public static Driver loadDriver(DriverRecord driverRecord) throws PrivilegedActionException {
         return AccessController.doPrivileged((PrivilegedExceptionAction<Driver>) () -> {
-            URL url = driverRecord.url;
-            try (URLClassLoader loader =
-                    new URLClassLoader(new URL[] {url}, H2MigrationTool.class.getClassLoader())) {
-                Class<?> classToLoad = Class.forName("org.h2.Driver", true, loader);
-                Method method = classToLoad.getDeclaredMethod("load");
-                Object instance = classToLoad.getDeclaredConstructor().newInstance();
-                method.invoke(instance);
-                return getDriverFromInstance(loader, instance);
-            }
+            URLClassLoader loader =
+                    new URLClassLoader(new URL[] {driverRecord.url},
+                            ClassLoader.getPlatformClassLoader());
+            Class<?> classToLoad = loader.loadClass("org.h2.Driver");
+            Method method = classToLoad.getDeclaredMethod("load");
+            return (java.sql.Driver) method.invoke(null);
         });
+    }
+
+    public static void unloadDriver(java.sql.Driver driver) {
+        try {
+            driver.getClass().getDeclaredMethod("unload").invoke(null);
+            if (driver.getClass().getClassLoader() instanceof URLClassLoader) {
+                ((URLClassLoader) driver.getClass().getClassLoader()).close();
+            }
+        } catch (Exception ex) {
+            LOGGER.log(Level.FINE, "Failed to unload Driver " + driver.getMajorVersion() + "."
+                    + driver.getMinorVersion(), ex);
+        }
     }
 
     public static DriverRecord getDriverRecord(Set<DriverRecord> driverRecords,
@@ -660,28 +652,18 @@ public class H2MigrationTool {
             String password, String scriptFileName, String options, String connectionParameters)
             throws SQLException, ClassNotFoundException, NoSuchMethodException,
             InstantiationException,
-            IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+            IllegalAccessException, IllegalArgumentException, InvocationTargetException,
+            PrivilegedActionException {
 
         Properties properties = new Properties();
         properties.setProperty("user", user);
         properties.setProperty("password", password);
-
-        URL url = driverRecord.url;
-        URLClassLoader loader = new URLClassLoader(new URL[] {url});
-
-        Class<?> classToLoad = Class.forName("org.h2.Driver", true, loader);
-
-        Method method = classToLoad.getDeclaredMethod("load");
-        Object instance = classToLoad.getDeclaredConstructor().newInstance();
-        Driver driver = (java.sql.Driver) method.invoke(instance);
-        getDriverFromInstance(loader, instance);
-
+        Driver driver = loadDriver(driverRecord);
         try (Connection connection = driver.connect(
                 "jdbc:h2:" + databaseFileName + ";ACCESS_MODE_DATA=r" + connectionParameters,
                 properties)) {
             List<String> commands = executeHooks(connection, HookStage.IMPORT);
             executeHooks(connection, HookStage.EXPORT);
-            classToLoad = Class.forName("org.h2.tools.Script", true, loader);
 
             // processScript(String url, String user, String password, String fileName, String
             // options1,
@@ -693,16 +675,32 @@ public class H2MigrationTool {
                     return new ScriptResult(scriptFileName, commands);
                 }
             } else {
-                Class<?>[] argClasses =
-                        new Class<?>[] {Connection.class, String.class, String.class, String.class};
-                method = classToLoad.getDeclaredMethod("process", argClasses);
-                instance = classToLoad.getDeclaredConstructor().newInstance();
-
-                // Connection conn, String fileName, String options1, String options2
-                method.invoke(instance, connection, scriptFileName, "", options);
-                return new ScriptResult(scriptFileName, commands);
+                URL url = driverRecord.url;
+                return AccessController
+                        .doPrivileged((PrivilegedExceptionAction<ScriptResult>) () -> {
+                            try (URLClassLoader loader =
+                                    new URLClassLoader(
+                                            new URL[] {driverRecord.url},
+                                            ClassLoader.getPlatformClassLoader())) {
+                                Class<?>[] argClasses =
+                                        new Class<?>[] {Connection.class, String.class,
+                                                String.class, String.class};
+                                Class<?> classToLoad =
+                                        Class.forName("org.h2.tools.Script", true, loader);
+                                Method method =
+                                        classToLoad.getDeclaredMethod("process", argClasses);
+                                Object instance =
+                                        classToLoad.getDeclaredConstructor().newInstance();
+                                // Connection conn, String fileName, String options1, String
+                                // options2
+                                method.invoke(instance, connection, scriptFileName, "", options);
+                                return new ScriptResult(scriptFileName, commands);
+                            }
+                        });
             }
 
+        } finally {
+            unloadDriver(driver);
         }
     }
 
@@ -728,21 +726,11 @@ public class H2MigrationTool {
 
         final URL url = driverRecord.url;
         final String finalDatabaseName = databaseName;
-        AccessController.doPrivileged((PrivilegedExceptionAction<Driver>) () -> {
-            try (URLClassLoader loader =
-                    new URLClassLoader(new URL[] {url}, H2MigrationTool.class.getClassLoader())) {
-                Class<?> classToLoad = Class.forName("org.h2.Driver", true, loader);
-                Method method = classToLoad.getDeclaredMethod("load");
-                Object instance = classToLoad.getDeclaredConstructor().newInstance();
-                method.invoke(instance);
-
-                return getDriverFromInstance(loader, instance);
-            }
-        });
 
         return AccessController.doPrivileged((PrivilegedExceptionAction<ScriptResult>) () -> {
             try (URLClassLoader loader =
-                    new URLClassLoader(new URL[] {url}, H2MigrationTool.class.getClassLoader())) {
+                    new URLClassLoader(new URL[] {driverRecord.url},
+                            ClassLoader.getPlatformClassLoader())) {
                 Class<?> classToLoad = Class.forName("org.h2.tools.Recover", true, loader);
                 Class<?>[] argClasses = new Class<?>[] {String.class, String.class};
                 Method method = classToLoad.getDeclaredMethod("execute", argClasses);
@@ -767,16 +755,7 @@ public class H2MigrationTool {
         properties.setProperty("user", user);
         properties.setProperty("password", password);
 
-        URL url = driverRecord.url;
-        URLClassLoader loader = new URLClassLoader(new URL[] {url});
-
-        Class<?> classToLoad = Class.forName("org.h2.Driver", true, loader);
-
-        Method method = classToLoad.getDeclaredMethod("load");
-        Object instance = classToLoad.getDeclaredConstructor().newInstance();
-        Driver driver = (java.sql.Driver) method.invoke(instance);
-        getDriverFromInstance(loader, instance);
-
+        Driver driver = loadDriver(driverRecord.getVersion());
         File dbFile = new File(modifiedDatabaseFileName + ".mv.db");
         if (dbFile.exists()) {
             if (dbFile.isFile() && dbFile.canWrite() && overwrite) {
@@ -809,6 +788,8 @@ public class H2MigrationTool {
 
             stat.executeUpdate("ANALYZE SAMPLE_SIZE 0");
             stat.executeUpdate("SHUTDOWN COMPACT");
+        } finally {
+            unloadDriver(driver);
         }
         return new ScriptResult(scriptFileName, commands);
     }
@@ -1031,10 +1012,12 @@ public class H2MigrationTool {
                                     + modifiedScriptFileName);
                     break;
                 } catch (Exception ex) {
-                    LOGGER.log(Level.WARNING,
+                    LOGGER.log(Level.FINE,
                             "Failed to write " + driverRecordFrom
                                     + " database to script",
                             ex);
+                    LOGGER.warning("Failed to write " + driverRecordFrom
+                               + " database to script\n" + ex.getLocalizedMessage());
                 }
             }
 

@@ -128,14 +128,16 @@ public class H2MigrationUI extends JFrame {
                                 new SwingWorker<>() {
 
                                     @Override
-                                    protected Map<File, Exception> doInBackground() throws Exception {
+                                    protected Map<File, Exception> doInBackground()
+                                            throws Exception {
                                         H2MigrationTool tool = new H2MigrationTool();
                                         H2MigrationTool.readDriverRecords();
 
                                         DriverRecord from = fromVersionList.getSelectedValue();
 
                                         ArrayList<File> databaseFiles = new ArrayList<>();
-                                        HashMap<File, Exception> failedDatabaseFiles = new HashMap<>();
+                                        HashMap<File, Exception> failedDatabaseFiles =
+                                                new HashMap<>();
 
                                         if (selectedIndices.length > 0) {
                                             for (int i : selectedIndices) {
@@ -175,7 +177,8 @@ public class H2MigrationUI extends JFrame {
                                             if (Desktop.isDesktopSupported()) {
                                                 Desktop desktop = Desktop.getDesktop();
                                                 if (WebswingUtil.isWebswing()
-                                                    && desktop.isSupported(Desktop.Action.OPEN)) {
+                                                        && desktop
+                                                                .isSupported(Desktop.Action.OPEN)) {
                                                     try {
                                                         desktop.open(e.getKey());
                                                     } catch (IOException ex) {
@@ -222,16 +225,18 @@ public class H2MigrationUI extends JFrame {
                                                 for (Entry<File, Exception> f : files.entrySet()) {
                                                     textArea.append(
                                                             f.getKey().getAbsolutePath()
-                                                            + "\n -> " + f.getValue().getLocalizedMessage()
-                                                            + "\n " + f.getValue().getCause().getLocalizedMessage()
-                                                    );
+                                                                    + "\n -> "
+                                                                    + f.getValue()
+                                                                            .getLocalizedMessage()
+                                                                    + "\n "
+                                                                    + f.getValue().getCause()
+                                                                            .getLocalizedMessage());
                                                     selectedIndices[i++] =
                                                             databaseFileModel.indexOf(f);
                                                 }
                                                 databaseFileList
                                                         .setSelectedIndices(selectedIndices);
-                                            }
-                                            else {
+                                            } else {
                                                 textArea.append("\nReady without errors.");
                                             }
                                         } catch (InterruptedException | ExecutionException ex) {
@@ -280,7 +285,8 @@ public class H2MigrationUI extends JFrame {
                                 new SwingWorker<>() {
 
                                     @Override
-                                    protected Map<File, Exception> doInBackground() throws Exception {
+                                    protected Map<File, Exception> doInBackground()
+                                            throws Exception {
                                         String connectionParameters =
                                                 connectionParameterField.getText();
 
@@ -291,14 +297,14 @@ public class H2MigrationUI extends JFrame {
                                         DriverRecord to = toVersionList.getSelectedValue();
 
                                         ArrayList<File> databaseFiles = new ArrayList<>();
-                                        HashMap<File, Exception> failedDatabaseFiles = new HashMap<>();
+                                        HashMap<File, Exception> failedDatabaseFiles =
+                                                new HashMap<>();
 
                                         if (selectedIndices.length > 0) {
                                             for (int i : selectedIndices) {
                                                 databaseFiles.add(databaseFileModel.get(i));
                                             }
-                                        }
-                                        else {
+                                        } else {
                                             databaseFiles.addAll(
                                                     Collections.list(databaseFileModel.elements()));
                                         }
@@ -307,31 +313,31 @@ public class H2MigrationUI extends JFrame {
                                             try {
                                                 String versionFrom =
                                                         from != null
-                                                        ? from.getVersion()
-                                                        : "";
+                                                                ? from.getVersion()
+                                                                : "";
                                                 String versionTo =
                                                         to != null
-                                                        ? to.getVersion()
-                                                        : "";
+                                                                ? to.getVersion()
+                                                                : "";
 
                                                 String username = usernameField.getText();
                                                 String password = passwordField.getText();
 
                                                 String upgradeOptions =
                                                         quirksModeBox.isSelected()
-                                                        ? "QUIRKS_MODE"
-                                                        : "";
+                                                                ? "QUIRKS_MODE"
+                                                                : "";
                                                 if (varbinaryBox.isSelected()) {
                                                     upgradeOptions +=
                                                             upgradeOptions.isEmpty()
-                                                            ? "VARIABLE_BINARY"
-                                                            : " VARIABLE_BINARY";
+                                                                    ? "VARIABLE_BINARY"
+                                                                    : " VARIABLE_BINARY";
                                                 }
 
                                                 String compression =
                                                         (String) compressionBox.getSelectedItem();
                                                 if (compression != null
-                                                    && compression.length() > 0) {
+                                                        && compression.length() > 0) {
                                                     compression = "COMPRESSION " + compression;
                                                 }
 
@@ -349,20 +355,17 @@ public class H2MigrationUI extends JFrame {
                                                                 upgradeOptions,
                                                                 overwrite,
                                                                 overwrite,
-                                                                connectionParameters
-                                                        );
+                                                                connectionParameters);
 
                                                 publish(new AbstractMap.SimpleEntry<>(
                                                         f,
-                                                        result.scriptFileName
-                                                ));
+                                                        result.scriptFileName));
 
                                             } catch (Exception ex) {
                                                 LOGGER.log(
                                                         Level.WARNING,
                                                         "Failed to migrate " + f.getAbsolutePath(),
-                                                        ex
-                                                );
+                                                        ex);
                                                 failedDatabaseFiles.put(f, ex);
                                             }
                                         }
@@ -373,34 +376,33 @@ public class H2MigrationUI extends JFrame {
                                     protected void process(List<Entry<File, String>> entries) {
                                         for (Entry<File, String> e : entries) {
                                             textArea.append(e.getKey().getAbsolutePath()
-                                                            + "\n -> "
-                                                            + e.getValue() + "\n");
+                                                    + "\n -> "
+                                                    + e.getValue() + "\n");
 
                                             if (Desktop.isDesktopSupported()) {
                                                 Desktop desktop = Desktop.getDesktop();
                                                 if (WebswingUtil.isWebswing()
-                                                    && desktop.isSupported(Desktop.Action.OPEN)) {
+                                                        && desktop
+                                                                .isSupported(Desktop.Action.OPEN)) {
                                                     try {
                                                         desktop.open(e.getKey());
                                                     } catch (IOException ex) {
                                                         LOGGER.log(Level.SEVERE, ex.getMessage(),
-                                                                   ex
-                                                        );
+                                                                ex);
                                                     }
                                                 } else if (desktop.isSupported(
                                                         Desktop.Action.BROWSE_FILE_DIR)) {
                                                     desktop.browseFileDirectory(e.getKey());
-                                                } else if (desktop.isSupported(Desktop.Action.OPEN)) {
+                                                } else if (desktop
+                                                        .isSupported(Desktop.Action.OPEN)) {
                                                     try {
                                                         desktop.open(e.getKey().getParentFile());
                                                     } catch (IOException ex) {
                                                         LOGGER.log(Level.SEVERE, ex.getMessage(),
-                                                                   ex
-                                                        );
+                                                                ex);
                                                     }
                                                 }
-                                            }
-                                            else {
+                                            } else {
                                                 LOGGER.warning(
                                                         "Desktop Actions are not supported.");
 
@@ -428,16 +430,18 @@ public class H2MigrationUI extends JFrame {
                                                 for (Entry<File, Exception> f : files.entrySet()) {
                                                     textArea.append(
                                                             f.getKey().getAbsolutePath()
-                                                            + "\n -> " + f.getValue().getLocalizedMessage()
-                                                            + "\n " + f.getValue().getCause().getLocalizedMessage()
-                                                    );
+                                                                    + "\n -> "
+                                                                    + f.getValue()
+                                                                            .getLocalizedMessage()
+                                                                    + "\n "
+                                                                    + f.getValue().getCause()
+                                                                            .getLocalizedMessage());
                                                     selectedIndices[i++] =
                                                             databaseFileModel.indexOf(f);
                                                 }
                                                 databaseFileList
                                                         .setSelectedIndices(selectedIndices);
-                                            }
-                                            else {
+                                            } else {
                                                 textArea.append("\nReady without errors.");
                                             }
                                         } catch (InterruptedException | ExecutionException ex) {

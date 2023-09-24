@@ -19,11 +19,11 @@ public class RecursiveFileFindTest {
     public static final Logger LOGGER = Logger.getLogger(RecursiveFileFindTest.class.getName());
 
     @Test
-    public void findH2FilesInHome() {
+    public void findH2FilesInTestResources() {
         Assertions.assertDoesNotThrow(new Executable() {
             @Override
             public void execute() throws Throwable {
-                String homeFolderStr = H2MigrationTool.getAbsoluteFileName("~");
+                String homeFolderStr = H2MigrationTool.getAbsoluteFileName("src/test");
                 LOGGER.info(homeFolderStr);
                 for (Path p : H2MigrationTool.findH2Databases(homeFolderStr)) {
                     LOGGER.info(p.toString());
