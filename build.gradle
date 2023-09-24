@@ -85,6 +85,13 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.+'
     implementation 'commons-cli:commons-cli:1.+'
 
+    // for checking if we run withing WebSwing
+    implementation 'org.webswing:webswing-api:20.2.4'
+
+    testImplementation 'org.apache.groovy:groovy:+'
+    testImplementation 'org.apache.groovy:groovy-sql:+'
+    testImplementation 'org.apache.groovy:groovy-jsr223:+'
+    testImplementation 'de.vandermeer:asciitable:+'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.+'
     testImplementation 'com.h2database:h2:+'
 }
@@ -370,6 +377,11 @@ remotes {
         user = findProperty("${project.name}.username")
         identity = new File("${System.properties['user.home']}/.ssh/id_rsa")
     }
+    vbox {
+        host = '217.160.215.75'
+        user = 'manticore'
+        identity = new File("${System.properties['user.home']}/.ssh/id_rsa")
+    }
 }
 
 tasks.register('upload') {
@@ -392,7 +404,13 @@ tasks.register('upload') {
                     put from: file, into: "download/${project.name}-${versionStable}"
                 }
             }
+            session(remotes.vbox) {
+                def description="H2MigrationTool"
+                put from: new File("${project.buildDir}/distributions/${description}-${version}.zip"), into: "vbox/dist"
+                execute "sh -c 'cd vbox/dist; rm -Rf ${description} ${description}-${version}; unzip -uq ${description}-${version}.zip; ln -s ${description}-${version} ${description}'"
+            }
         }
     }
+    dependsOn(assemble)
 }
 
