@@ -4,7 +4,7 @@
 [![issues - H2MigrationTool](https://img.shields.io/github/issues/manticore-projects/H2MigrationTool)](https://github.com/manticore-projects/H2MigrationTool/issues)
 
 
-A software tool for migration of an old H2 database into a new H2 database format automatically. [Online Version is available.](h2migrationtool.manticore-projects.com)
+A software tool for migration of an old H2 database into a new H2 database format automatically. [Online Version is available.](http://h2migrationtool.manticore-projects.com)
 
 [GitHub](https://github.com/manticore-projects/H2MigrationTool) [WebSite](http://manticore-projects.com/H2MigrationTool/README.html)
 
