@@ -94,6 +94,9 @@ dependencies {
     testImplementation 'de.vandermeer:asciitable:+'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.+'
     testImplementation 'com.h2database:h2:+'
+
+    // Java Doc in XML Format
+    xmlDoclet 'com.manticore-projects.tools:xml-doclet:+'
 }
 
 configurations.configureEach {
@@ -173,18 +176,33 @@ javadoc {
 }
 
 tasks.register('xmldoc', Javadoc) {
+    def outFile =  reporting.file(
+            version.endsWith("-SNAPSHOT")
+                    ? "xmlDoclet/javadoc_snapshot.xml"
+                    : "xmlDoclet/javadoc_stable.xml"
+    )
+
+    def rstFile =  reporting.file(
+            version.endsWith("-SNAPSHOT")
+                    ? "xmlDoclet/javadoc_snapshot.rst"
+                    : "xmlDoclet/javadoc_stable.rst"
+    )
+
     source = sourceSets.main.allJava
+    // beware: Gradle deletes this folder automatically and there is no switch-off
     destinationDir = reporting.file("xmlDoclet")
     options.docletpath = configurations.xmlDoclet.files as List
     options.doclet = "com.github.markusbernhardt.xmldoclet.XmlDoclet"
-
+    title = "API $version"
     options.addBooleanOption("rst", true)
+    options.addBooleanOption("withFloatingToc", Boolean.parseBoolean(System.getenv().getOrDefault("FLOATING_TOC", "true")))
     options.addStringOption("basePackage", "com.manticore")
+    options.addStringOption("filename", outFile.getName())
 
     dependsOn(compileJava)
     doLast {
         copy {
-            from reporting.file("xmlDoclet/javadoc.rst")
+            from rstFile
             into "${projectDir}/src/site/sphinx/"
         }
     }
@@ -368,7 +386,39 @@ coveralls {
 
 tasks.register('gitChangelogTask', GitChangelogTask) {
     fromRepo = file("$projectDir")
-    file = new File("${projectDir}/src/site/sphinx/changelog.md")
+    file = new File("${projectDir}/src/site/sphinx/changelog.rst")
+
+    // switch off the formatter since the indentation matters for Mark-down
+    // @formatter:off
+    templateContent ="""
+************************
+Changelog
+************************
+
+
+{{#tags}}
+{{#ifMatches name "^Unreleased.*"}}
+Latest Changes since |H2MIGRATIONTOOL_VERSION|
+{{/ifMatches}}
+{{#ifMatches name "^(?!Unreleased).*"}}
+Version {{name}}
+{{/ifMatches}}
+=============================================================
+
+ {{#issues}}
+
+  {{#commits}}
+   {{#ifMatches messageTitle "^(?!Merge).*"}}
+  * **{{{messageTitle}}}**
+    
+    {{authorName}}, {{commitDate}}
+   {{/ifMatches}}
+  {{/commits}}
+
+ {{/issues}}
+{{/tags}}
+"""
+    // @formatter:on
 }
 
 remotes {
@@ -411,6 +461,6 @@ tasks.register('upload') {
             }
         }
     }
-    dependsOn(assemble)
+    dependsOn(assemble, xmldoc, gitChangelogTask)
 }
 

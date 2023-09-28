@@ -1,3 +1,7 @@
+.. meta::
+   :description: Java Software for migrating and updating H2 Database files.
+   :keywords: h2 database upgrade migration export sql script backup recover
+
 ######################################
 H2 Migration Tool
 ######################################
@@ -7,8 +11,9 @@ H2 Migration Tool
    :hidden:
 
    usage
-   Changelog <changelog.md>
-   Java API <javadoc.rst>
+   Changelog <changelog.rst>
+   API Stable <javadoc_stable.rst>
+   API Snapshot <javadoc_snapshot.rst>
    Demo <demo.rst>
 
 .. image:: https://badgen.net/maven/v/maven-central/com.manticore-projects.tools/h2migrationtool
@@ -70,7 +75,7 @@ Features
 * **Migrate H2 Database** via the `Export to Script <https://www.h2database.com/html/commands.html#script>`_ and `Create from Script <https://www.h2database.com/html/commands.html#runscript>`_ commands, using old and new H2 Drivers for each
 * **Recover** H2 Databases via the `H2 Recovery Tool <http://www.h2database.com/javadoc/org/h2/tools/Recover.html>`_
 * **Fat JAR** including all relevant H2 Drivers
-*  **UI** Graphical User Interface
+* **UI** Graphical User Interface
 * **CLI** Command Line Interface
 * **File** or **Directory** operation
 * **Compression** (Zip or GZip)
