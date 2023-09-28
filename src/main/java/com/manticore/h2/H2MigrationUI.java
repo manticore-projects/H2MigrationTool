@@ -1147,6 +1147,11 @@ public class H2MigrationUI extends JFrame {
         setPreferredSize(new Dimension(480, 720));
         pack();
         setMinimumSize(getSize());
+
+        if (WebswingUtil.isWebswing()) {
+            setExtendedState(MAXIMIZED_BOTH);
+        }
+
         setVisible(visible);
     }
 
