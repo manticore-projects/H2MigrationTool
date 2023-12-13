@@ -903,7 +903,7 @@ public class H2MigrationTool {
                 scriptResult = createFromScript(driverRecordTo, databaseFileName, user, password,
                         modifiedScriptFileName, options, commands, force, connectionParameters);
                 modifiedDatabaseFileName = databaseFileName + "." + driverRecordTo.patchId
-                                           + (!driverRecordTo.buildId.isEmpty() ? ("-" + driverRecordTo.buildId) : "");
+                        + (!driverRecordTo.buildId.isEmpty() ? ("-" + driverRecordTo.buildId) : "");
 
 
                 LOGGER.info("Created new " + driverRecordTo + " database: "
@@ -1019,7 +1019,7 @@ public class H2MigrationTool {
                                     + " database to script",
                             ex);
                     LOGGER.warning("Failed to write " + driverRecordFrom
-                               + " database to script\n" + ex.getLocalizedMessage());
+                            + " database to script\n" + ex.getLocalizedMessage());
                 }
             }
 

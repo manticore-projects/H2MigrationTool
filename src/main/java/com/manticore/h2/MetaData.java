@@ -24,7 +24,7 @@ import java.util.TreeMap;
 /**
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
-public class MetaData {
+public final class MetaData {
 
     private final TreeMap<String, Catalog> catalogs = new TreeMap<>();
     private final DatabaseMetaData metaData;

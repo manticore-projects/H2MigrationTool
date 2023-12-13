@@ -166,7 +166,7 @@ public class SimpleMigrateTest {
         H2MigrationTool tool = new H2MigrationTool();
         H2MigrationTool.readDriverRecords("");
         String version = "2.0.201";
-        String s = dbFileUriStr.get(dbFileUriStr.size()-1);
+        String s = dbFileUriStr.get(dbFileUriStr.size() - 1);
         URI h2FileUri = new URI(s);
         File h2File = new File(h2FileUri);
 
@@ -178,14 +178,13 @@ public class SimpleMigrateTest {
                 "",
                 null,
                 "",
-                ""
-        );
+                "");
 
         Assertions.assertEquals("", scripResult.scriptFileName);
 
 
-//        H2MigrationTool.ScriptResult scriptResult =
-//                createFromScript(driverRecordTo, databaseName, user, password,
-//                                 modifiedScriptFileName, options, commands, force, null);
+        // H2MigrationTool.ScriptResult scriptResult =
+        // createFromScript(driverRecordTo, databaseName, user, password,
+        // modifiedScriptFileName, options, commands, force, null);
     }
 }
