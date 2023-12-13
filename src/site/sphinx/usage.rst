@@ -77,7 +77,7 @@ Maven Artifacts
 
         <dependency>
             <groupId>com.manticore-projects.tools</groupId>
-            <artifactId>H2MigrationTool</artifactId>
+            <artifactId>h2migrationtool</artifactId>
             <version>|H2MIGRATIONTOOL_VERSION|</version>
         </dependency>
 
@@ -97,7 +97,7 @@ Maven Artifacts
         </repositories>
         <dependency>
             <groupId>com.manticore-projects.tools</groupId>
-            <artifactId>H2MigrationTool</artifactId>
+            <artifactId>h2migrationtool</artifactId>
             <version>|H2MIGRATIONTOOL_SNAPSHOT_VERSION|</version>
         </dependency>
 
@@ -111,7 +111,7 @@ Maven Artifacts
         }
 
         dependencies {
-            implementation 'com.manticore-projects.tools:H2MigrationTool:|H2MIGRATIONTOOL_VERSION|'
+            implementation 'com.manticore-projects.tools:h2migrationtool:|H2MIGRATIONTOOL_VERSION|'
         }
 
 .. tab:: Gradle Snapshot
@@ -126,7 +126,7 @@ Maven Artifacts
         }
 
         dependencies {
-            implementation 'com.manticore-projects.tools:H2MigrationTool:|H2MIGRATIONTOOL_SNAPSHOT_VERSION|'
+            implementation 'com.manticore-projects.tools:h2migrationtool:|H2MIGRATIONTOOL_SNAPSHOT_VERSION|'
         }
 
 
