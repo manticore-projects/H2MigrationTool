@@ -15,6 +15,7 @@
 package com.manticore.h2;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -158,5 +159,33 @@ public class SimpleMigrateTest {
                 tool.migrateAuto(h2File.getCanonicalPath());
             }
         }
+    }
+
+    @Test
+    public void databaseScriptResultTest() throws Exception {
+        H2MigrationTool tool = new H2MigrationTool();
+        H2MigrationTool.readDriverRecords("");
+        String version = "2.0.201";
+        String s = dbFileUriStr.get(dbFileUriStr.size()-1);
+        URI h2FileUri = new URI(s);
+        File h2File = new File(h2FileUri);
+
+        DriverRecord driverRecord = tool.getDriverRecord(version);
+        final H2MigrationTool.ScriptResult scripResult = tool.writeScript(
+                driverRecord,
+                h2File.getCanonicalPath(),
+                "SA",
+                "",
+                null,
+                "",
+                ""
+        );
+
+        Assertions.assertEquals("", scripResult.scriptFileName);
+
+
+//        H2MigrationTool.ScriptResult scriptResult =
+//                createFromScript(driverRecordTo, databaseName, user, password,
+//                                 modifiedScriptFileName, options, commands, force, null);
     }
 }

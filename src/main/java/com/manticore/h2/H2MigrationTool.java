@@ -643,11 +643,11 @@ public class H2MigrationTool {
         return commands;
     }
 
-    private DriverRecord getDriverRecord(String version) throws Exception {
+    public DriverRecord getDriverRecord(String version) throws Exception {
         return getDriverRecord(H2MigrationTool.DRIVER_RECORDS, version);
     }
 
-    private ScriptResult writeScript(DriverRecord driverRecord, String databaseFileName,
+    public ScriptResult writeScript(DriverRecord driverRecord, String databaseFileName,
             String user,
             String password, String scriptFileName, String options, String connectionParameters)
             throws SQLException, ClassNotFoundException, NoSuchMethodException,
@@ -897,16 +897,18 @@ public class H2MigrationTool {
                 modifiedCompression != null && modifiedCompression.length() > 0
                         ? modifiedCompression + " " + upgradeOptions
                         : upgradeOptions;
+
         if (success) {
             try {
                 scriptResult = createFromScript(driverRecordTo, databaseFileName, user, password,
                         modifiedScriptFileName, options, commands, force, connectionParameters);
+                modifiedDatabaseFileName = databaseFileName + "." + driverRecordTo.patchId
+                                           + (!driverRecordTo.buildId.isEmpty() ? ("-" + driverRecordTo.buildId) : "");
+
+
                 LOGGER.info("Created new " + driverRecordTo + " database: "
                         + modifiedDatabaseFileName);
-
-                modifiedDatabaseFileName = scriptResult.scriptFileName;
                 commands.addAll(scriptResult.commands);
-
             } catch (Exception ex) {
                 throw new Exception(
                         "Failed to created new " + driverRecordTo + " database: "
