@@ -180,7 +180,7 @@ public class SimpleMigrateTest {
                 "",
                 "");
 
-        Assertions.assertEquals("", scripResult.scriptFileName);
+        Assertions.assertNull(scripResult.scriptFileName);
 
 
         // H2MigrationTool.ScriptResult scriptResult =
