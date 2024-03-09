@@ -47,7 +47,8 @@ Development version: |H2MIGRATIONTOOL_SNAPSHOT_VERSION_LINK|
 Compile from Source Code
 ==============================
 
-You will need to have ``JDK 8`` or ``JDK 11`` or ``JDK 17`` installed.
+You will need to have ``JDK 11`` installed since H2-2.2.224 and later depend on JDK 11 strictly.
+The minimal Maven build does not support the unit tests.
 
 .. tab:: Maven
 
@@ -55,7 +56,7 @@ You will need to have ``JDK 8`` or ``JDK 11`` or ``JDK 17`` installed.
 
         git clone https://github.com/manticore-projects/H2MigrationTool.git
         cd H2MigrationTool
-        mvn install
+        mvn install -DskipTests
 
 .. tab:: Gradle
 

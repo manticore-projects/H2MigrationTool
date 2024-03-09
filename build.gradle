@@ -85,9 +85,6 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.+'
     implementation 'commons-cli:commons-cli:1.+'
 
-    // for checking if we run withing WebSwing
-    implementation 'org.webswing:webswing-api:20.2.4'
-
     testImplementation 'org.apache.groovy:groovy:+'
     testImplementation 'org.apache.groovy:groovy-sql:+'
     testImplementation 'org.apache.groovy:groovy-jsr223:+'
@@ -142,7 +139,7 @@ tasks.register('copyH2Jars') {
         // compile H2
         exec {
             executable "sh"
-            args "-c", "mvn -f ../h2database/h2 clean package -DskipTests"
+            args "-c", "mvn39 -f ../h2database/h2 clean package -DskipTests"
         }
         // copy the JARs into our resource folder
         exec {

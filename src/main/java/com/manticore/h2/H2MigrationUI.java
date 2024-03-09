@@ -92,12 +92,13 @@ public class H2MigrationUI extends JFrame {
 
     private static boolean isWebSwing() {
         try {
-            Class<?> clazz = H2MigrationUI.class.getClassLoader().loadClass("org.webswing.toolkit.api.WebswingUtil");
-            Method method =clazz.getMethod("isWebswing");
+            Class<?> clazz = H2MigrationUI.class.getClassLoader()
+                    .loadClass("org.webswing.toolkit.api.WebswingUtil");
+            Method method = clazz.getMethod("isWebswing");
             return (boolean) method.invoke(null);
-        } catch (ClassNotFoundException  ex) {
+        } catch (ClassNotFoundException ex) {
             LOGGER.log(Level.FINE, "Could not load the WebswingUtil", ex);
-        } catch (NoSuchMethodException |InvocationTargetException | IllegalAccessException ex) {
+        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException ex) {
             LOGGER.log(Level.FINE, "Failed to call the WebswingUtil.isWebswing() method", ex);
         }
         return false;

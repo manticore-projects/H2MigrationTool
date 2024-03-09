@@ -57,7 +57,7 @@ public class CLIRecoveryTest {
     @Test
     public void recoverCLI() throws Exception {
 
-        String versionFrom = "1.4.200";
+        String versionFrom = "2.2.224";
         String databaseName = "~/" + CLIRecoveryTest.class.getSimpleName() + "_" + versionFrom;
         String username = "SA";
         String password = "";
