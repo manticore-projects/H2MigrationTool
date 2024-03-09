@@ -27,8 +27,11 @@ hs_err_pid*
 
 # Ignore Gradle build output directory
 build
+target
+out
 
 .idea
 /.project
 /src/site/sphinx/changelog.rst
 /src/site/sphinx/javadoc_snapshot.rst
+/dependency-reduced-pom.xml

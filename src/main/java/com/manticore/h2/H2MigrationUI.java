@@ -15,7 +15,6 @@
 package com.manticore.h2;
 
 import com.manticore.h2.H2MigrationTool.ScriptResult;
-import org.webswing.toolkit.api.WebswingUtil;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -27,6 +26,8 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.Driver;
@@ -48,7 +49,6 @@ import java.util.logging.Logger;
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class H2MigrationUI extends JFrame {
-
     public static final ImageIcon LIST_ADD_ICON =
             new ImageIcon(
                     ClassLoader.getSystemResource("com/manticore/icons/16/list-add.png"),
@@ -89,6 +89,22 @@ public class H2MigrationUI extends JFrame {
                     ClassLoader.getSystemResource("com/manticore/icons/64/dialog-question.png"),
                     "Dialog Question.");
     private static final Logger LOGGER = Logger.getLogger(H2MigrationUI.class.getName());
+
+    private static boolean isWebSwing() {
+        try {
+            Class<?> clazz = H2MigrationUI.class.getClassLoader().loadClass("org.webswing.toolkit.api.WebswingUtil");
+            Method method =clazz.getMethod("isWebswing");
+            return (boolean) method.invoke(null);
+        } catch (ClassNotFoundException  ex) {
+            LOGGER.log(Level.FINE, "Could not load the WebswingUtil", ex);
+        } catch (NoSuchMethodException |InvocationTargetException | IllegalAccessException ex) {
+            LOGGER.log(Level.FINE, "Failed to call the WebswingUtil.isWebswing() method", ex);
+        }
+        return false;
+    }
+
+    private final static boolean IS_WEBSWING = isWebSwing();
+
     private static final Font MONOSPACED_FONT = new Font(Font.MONOSPACED, Font.PLAIN, 10);
     private final DefaultListModel<File> databaseFileModel = new DefaultListModel<>();
     private final JList<File> databaseFileList = new JList<>(databaseFileModel);
@@ -176,7 +192,7 @@ public class H2MigrationUI extends JFrame {
 
                                             if (Desktop.isDesktopSupported()) {
                                                 Desktop desktop = Desktop.getDesktop();
-                                                if (WebswingUtil.isWebswing()
+                                                if (IS_WEBSWING
                                                         && desktop
                                                                 .isSupported(Desktop.Action.OPEN)) {
                                                     try {
@@ -381,7 +397,7 @@ public class H2MigrationUI extends JFrame {
 
                                             if (Desktop.isDesktopSupported()) {
                                                 Desktop desktop = Desktop.getDesktop();
-                                                if (WebswingUtil.isWebswing()
+                                                if (IS_WEBSWING
                                                         && desktop
                                                                 .isSupported(Desktop.Action.OPEN)) {
                                                     try {
@@ -1148,7 +1164,7 @@ public class H2MigrationUI extends JFrame {
         pack();
         setMinimumSize(getSize());
 
-        if (WebswingUtil.isWebswing()) {
+        if (IS_WEBSWING) {
             setExtendedState(MAXIMIZED_BOTH);
         }
 
