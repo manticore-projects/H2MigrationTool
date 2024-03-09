@@ -550,7 +550,7 @@ public class H2MigrationTool {
                 if (versionFrom != null && versionFrom.length() > 1) {
                     app.migrate(versionFrom, versionTo, databaseFileName, user, password,
                             scriptFileName,
-                            compression, upgradeOptions, overwrite, force, null);
+                            compression, upgradeOptions, overwrite, force, "");
                 } else {
                     app.migrateAuto(versionTo, databaseFileName, user, password, scriptFileName,
                             compression,
@@ -660,7 +660,7 @@ public class H2MigrationTool {
         properties.setProperty("password", password);
         Driver driver = loadDriver(driverRecord);
         try (Connection connection = driver.connect(
-                "jdbc:h2:" + databaseFileName + ";ACCESS_MODE_DATA=r" + connectionParameters,
+                "jdbc:h2:" + databaseFileName + ";ACCESS_MODE_DATA=r" + Objects.requireNonNull(connectionParameters),
                 properties)) {
             List<String> commands = executeHooks(connection, HookStage.IMPORT);
             executeHooks(connection, HookStage.EXPORT);
@@ -835,7 +835,7 @@ public class H2MigrationTool {
 
                 scriptResult =
                         writeScript(driverRecordFrom, modifiedDatabaseFileName, user, password,
-                                modifiedScriptFileName, modifiedCompression, connectionParameters);
+                                modifiedScriptFileName, modifiedCompression, Objects.requireNonNull(connectionParameters));
 
                 modifiedScriptFileName = scriptResult.scriptFileName;
                 commands.addAll(scriptResult.commands);
@@ -894,16 +894,16 @@ public class H2MigrationTool {
         }
 
         String options =
-                modifiedCompression != null && modifiedCompression.length() > 0
+                modifiedCompression != null && !modifiedCompression.isEmpty()
                         ? modifiedCompression + " " + upgradeOptions
                         : upgradeOptions;
 
         if (success) {
             try {
-                scriptResult = createFromScript(driverRecordTo, databaseFileName, user, password,
-                        modifiedScriptFileName, options, commands, force, connectionParameters);
-                modifiedDatabaseFileName = databaseFileName + "." + driverRecordTo.patchId
-                        + (!driverRecordTo.buildId.isEmpty() ? ("-" + driverRecordTo.buildId) : "");
+                scriptResult = createFromScript(driverRecordTo, modifiedDatabaseFileName, user, password,
+                        modifiedScriptFileName, options, commands, force, Objects.requireNonNull(connectionParameters));
+                modifiedDatabaseFileName = modifiedDatabaseFileName + "." + driverRecordTo.patchId
+                        + (!driverRecordTo.buildId.isEmpty() ? ("-" + driverRecordTo.buildId) : "") + ".mv.db";
 
 
                 LOGGER.info("Created new " + driverRecordTo + " database: "
@@ -1024,14 +1024,14 @@ public class H2MigrationTool {
             }
 
             String options =
-                    compression != null && compression.length() > 0
+                    compression != null && !compression.isEmpty()
                             ? compression + " " + upgradeOptions
                             : upgradeOptions;
             if (success) {
                 try {
                     ScriptResult scriptResult =
                             createFromScript(driverRecordTo, databaseName, user, password,
-                                    modifiedScriptFileName, options, commands, force, null);
+                                    modifiedScriptFileName, options, commands, force, "");
 
                     databaseName = scriptResult.scriptFileName;
                     LOGGER.info("Created new " + driverRecordTo + " database: "
