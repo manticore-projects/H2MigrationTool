@@ -12,7 +12,7 @@
 
 
 #######################################################################
-API 1.4
+API 1.5
 #######################################################################
 
 Base Package: com.manticore
@@ -395,6 +395,24 @@ H2MigrationTool
 
 | **main** (args)
 |          :ref:`String<java.lang.String>` args
+
+
+| **getDriverRecord** (version) → :ref:`DriverRecord<com.manticore.h2.DriverRecord>`
+|          :ref:`String<java.lang.String>` version
+|          returns :ref:`DriverRecord<com.manticore.h2.DriverRecord>`
+
+
+
+| **writeScript** (driverRecord, databaseFileName, user, password, scriptFileName, options, connectionParameters) → :ref:`ScriptResult<com.manticore.h2.H2MigrationTool.ScriptResult>`
+|          :ref:`DriverRecord<com.manticore.h2.DriverRecord>` driverRecord
+|          :ref:`String<java.lang.String>` databaseFileName
+|          :ref:`String<java.lang.String>` user
+|          :ref:`String<java.lang.String>` password
+|          :ref:`String<java.lang.String>` scriptFileName
+|          :ref:`String<java.lang.String>` options
+|          :ref:`String<java.lang.String>` connectionParameters
+|          returns :ref:`ScriptResult<com.manticore.h2.H2MigrationTool.ScriptResult>`
+
 
 
 | **writeRecoveryScript** (driverRecord, folderName, databaseFileName) → :ref:`ScriptResult<com.manticore.h2.H2MigrationTool.ScriptResult>`
