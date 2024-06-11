@@ -672,7 +672,7 @@ public class H2MigrationTool {
             if (driver.getMajorVersion() == 1 && driver.getMinorVersion() <= 3) {
                 String sql = String.format("SCRIPT TO '%s' %s", scriptFileName, options);
                 try (PreparedStatement st = connection.prepareStatement(sql)) {
-                    st.execute(sql);
+                    st.execute();
                     return new ScriptResult(scriptFileName, commands);
                 }
             } else {
