@@ -266,12 +266,6 @@ publishing {
             url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
             credentials(PasswordCredentials)
         }
-//        maven {
-//            name = "GitHubPackages"
-//
-//            url = uri("https://maven.pkg.github.com/manticore-projects/h2migrationtool")
-//            credentials(PasswordCredentials)
-//        }
     }
 }
 

@@ -5,8 +5,8 @@
 
     <!-- Define the project's coordinates -->
     <groupId>com.manticore-projects.tools</groupId>
-    <artifactId>H2MigrationTool</artifactId>
-    <version>1.4.0</version>
+    <artifactId>h2migrationtool</artifactId>
+    <version>1.6-SNAPSHOT</version>
 
     <!-- Define project properties -->
     <properties>
