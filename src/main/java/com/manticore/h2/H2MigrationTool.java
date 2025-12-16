@@ -75,6 +75,9 @@ public class H2MigrationTool {
     public static final Pattern VERSION_PATTERN = Pattern
             .compile("([0-9]+)\\.([0-9]+)\\.([0-9]+)(-([a-z0-9]{9}))?", Pattern.CASE_INSENSITIVE);
 
+    public static final Pattern H2_DRIVER_VERSION_PATTERN = Pattern
+            .compile("h2-([0-9]+\\.[0-9]+\\.[0-9]+(?:-[a-zA-Z0-9-]+)?)\\.bin", Pattern.CASE_INSENSITIVE);
+
     private static final TreeSet<DriverRecord> DRIVER_RECORDS = new TreeSet<>();
 
     public static Set<DriverRecord> getDriverRecords() {
@@ -302,16 +305,21 @@ public class H2MigrationTool {
                 }
             });
 
-            Matcher matcher = VERSION_PATTERN.matcher(url.getFile());
-            if (matcher.find()) {
-                int majorVersion = Integer.parseInt(matcher.group(1));
-                int minorVersion = Integer.parseInt(matcher.group(2));
-                int patchId = Integer.parseInt(matcher.group(3));
-                String buildId = matcher.groupCount() == 5 ? matcher.group(5) : "";
-                DriverRecord driverRecord =
-                        new DriverRecord(majorVersion, minorVersion, patchId, buildId, url);
-                DRIVER_RECORDS.add(driverRecord);
-                LOGGER.fine(driverRecord.toString());
+            String urlFile = url.getFile();
+            Matcher driverMatcher = H2_DRIVER_VERSION_PATTERN.matcher(urlFile);
+            if (driverMatcher.find()) {
+                String versionString = driverMatcher.group(1);
+                Matcher versionMatcher = VERSION_PATTERN.matcher(versionString);
+                if (versionMatcher.find()) {
+                    int majorVersion = Integer.parseInt(versionMatcher.group(1));
+                    int minorVersion = Integer.parseInt(versionMatcher.group(2));
+                    int patchId = Integer.parseInt(versionMatcher.group(3));
+                    String buildId = versionMatcher.groupCount() == 5 ? versionMatcher.group(5) : "";
+                    DriverRecord driverRecord =
+                            new DriverRecord(majorVersion, minorVersion, patchId, buildId, url);
+                    DRIVER_RECORDS.add(driverRecord);
+                    LOGGER.fine(driverRecord.toString());
+                }
             }
         } catch (Exception ex) {
             LOGGER.log(Level.SEVERE, "Failed to load the driver " + url.toString(), ex);
