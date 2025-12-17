@@ -77,7 +77,8 @@ public class H2MigrationTool {
             .compile("([0-9]+)\\.([0-9]+)\\.([0-9]+)(-([a-z0-9]{9}))?", Pattern.CASE_INSENSITIVE);
 
     public static final Pattern H2_DRIVER_VERSION_PATTERN = Pattern
-            .compile("h2-([0-9]+\\.[0-9]+\\.[0-9]+(?:-[a-zA-Z0-9-]+)?)\\.bin", Pattern.CASE_INSENSITIVE);
+            .compile("h2-([0-9]+\\.[0-9]+\\.[0-9]+(?:-[a-zA-Z0-9-]+)?)\\.bin",
+                    Pattern.CASE_INSENSITIVE);
 
     private static final TreeSet<DriverRecord> DRIVER_RECORDS = new TreeSet<>();
 
@@ -380,7 +381,8 @@ public class H2MigrationTool {
                     int majorVersion = Integer.parseInt(versionMatcher.group(1));
                     int minorVersion = Integer.parseInt(versionMatcher.group(2));
                     int patchId = Integer.parseInt(versionMatcher.group(3));
-                    String buildId = versionMatcher.groupCount() == 5 ? versionMatcher.group(5) : "";
+                    String buildId =
+                            versionMatcher.groupCount() == 5 ? versionMatcher.group(5) : "";
                     DriverRecord driverRecord =
                             new DriverRecord(majorVersion, minorVersion, patchId, buildId, url);
                     DRIVER_RECORDS.add(driverRecord);
