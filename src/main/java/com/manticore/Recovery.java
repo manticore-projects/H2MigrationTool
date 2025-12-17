@@ -5,6 +5,7 @@
 
 package com.manticore;
 
+import com.formdev.flatlaf.FlatLightLaf;
 import com.manticore.h2.DriverRecord;
 import com.manticore.h2.H2MigrationTool;
 import com.manticore.h2.H2MigrationUI;
@@ -15,7 +16,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 
 import javax.swing.*;
-import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.awt.*;
 import java.io.File;
 import java.util.logging.Level;
@@ -52,13 +52,7 @@ public class Recovery {
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
-                        try {
-                            UIManager.setLookAndFeel(NimbusLookAndFeel.class.getName());
-                        } catch (ClassNotFoundException | InstantiationException
-                                | IllegalAccessException
-                                | UnsupportedLookAndFeelException ex) {
-                            LOGGER.log(Level.SEVERE, "Error when setting the NIMBUS L&F", ex);
-                        }
+                        FlatLightLaf.setup();
 
                         try {
                             H2MigrationTool.readDriverRecords();

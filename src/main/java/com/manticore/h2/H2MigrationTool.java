@@ -14,6 +14,7 @@
  */
 package com.manticore.h2;
 
+import com.formdev.flatlaf.FlatLightLaf;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -24,15 +25,14 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.swing.*;
-import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.awt.*;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.FileSystem;
@@ -70,7 +70,6 @@ import java.util.stream.Stream;
  * @author Andreas Reichel <andreas@manticore-projects.com>
  */
 public class H2MigrationTool {
-
     public static final Logger LOGGER = Logger.getLogger(H2MigrationTool.class.getName());
     public static final Pattern VERSION_PATTERN = Pattern
             .compile("([0-9]+)\\.([0-9]+)\\.([0-9]+)(-([a-z0-9]{9}))?", Pattern.CASE_INSENSITIVE);
@@ -106,7 +105,9 @@ public class H2MigrationTool {
                     String fileName = file.getName().toLowerCase();
                     return file.isDirectory() || fileName.endsWith(".sql")
                             || fileName.endsWith(".sql.gz")
-                            || fileName.endsWith(".sql.zip");
+                            || fileName.endsWith(".sql.zip")
+                            || fileName.endsWith(".sql.knz")
+                            || fileName.endsWith(".sql.bz2");
                 }
 
                 @Override
@@ -118,9 +119,8 @@ public class H2MigrationTool {
     private final TreeSet<Hook> hooks = new TreeSet<>();
 
     public static String getTempFolderName() {
-        String tempPath = new File(System.getProperty("java.io.tmpdir")).getAbsolutePath();
 
-        return tempPath;
+        return new File(System.getProperty("java.io.tmpdir")).getAbsolutePath();
     }
 
     public static File getAbsoluteFile(String filename) {
@@ -152,8 +152,8 @@ public class H2MigrationTool {
         try (Stream<Path> paths = Files.find(parentPath, depth, (path, attr) -> {
             if (attr.isRegularFile()) {
                 String pathName = path.getFileName().toString().toLowerCase();
-                return pathName.startsWith(prefix.toLowerCase())
-                        && pathName.endsWith(suffix.toLowerCase());
+                return (prefix==null || prefix.isEmpty() || pathName.startsWith(prefix.toLowerCase()))
+                        && (suffix==null || suffix.isEmpty() || pathName.endsWith(suffix.toLowerCase()));
             }
             return false;
         })) {
@@ -175,7 +175,7 @@ public class H2MigrationTool {
                     }
                 }
             } catch (RuntimeException ex) {
-                LOGGER.log(Level.FINE, "Failed to traverse " + parentPath.toString(), ex);
+                LOGGER.log(Level.FINE, "Failed to traverse " + parentPath, ex);
             }
             return false;
         })) {
@@ -213,12 +213,67 @@ public class H2MigrationTool {
         return readDriverRecords("");
     }
 
+    public static Collection<URL> readCompressionLibs() throws URISyntaxException, IOException {
+        ArrayList<URL> classpathUrls = new ArrayList<>();
+
+        Path myPath;
+        FileSystem fileSystem = null;
+
+        URL resourceUrl = H2MigrationTool.class.getResource("/");
+        assert resourceUrl != null;
+        URI resourceUri = resourceUrl.toURI();
+        if (resourceUri.getScheme().equals("jar")) {
+            try {
+                fileSystem = FileSystems.getFileSystem(resourceUri);
+            } catch (Exception e) {
+            fileSystem = FileSystems.newFileSystem(resourceUri,
+                    Collections.emptyMap());
+            }
+            myPath = fileSystem.getPath("/");
+        } else {
+            myPath = Paths.get(resourceUri);
+        }
+
+        for (Path path : findFilesInPathRecursively(myPath, 1, null, ".bin")) {
+            LOGGER.fine("Found compression library " + path);
+            try {
+                resourceUri = path.toUri();
+                URL url = path.toUri().toURL();
+
+                // @todo: For any reason we can't load a Jar from inside a Jar
+                // so we have to extract a local copy first
+                // investigate, if the is a better solution, e. g. a special ClassLoader
+                if (resourceUri.getScheme().equals("jar")) {
+                    String fileName = FilenameUtils.getName(url.getPath());
+                    File tmpFile = new File(System.getProperty("java.io.tmpdir"), fileName);
+                    tmpFile.deleteOnExit();
+
+                    Files.copy(url.openStream(), tmpFile.toPath(),
+                            StandardCopyOption.REPLACE_EXISTING);
+
+                    classpathUrls.add(tmpFile.toURI().toURL());
+                }
+            } catch (RuntimeException ex) {
+                LOGGER.log(Level.SEVERE,
+                        "Failed to load the driver " + path, ex);
+            }
+        }
+
+        LOGGER.fine("Compression libraries loaded: " + classpathUrls.size());
+
+        if (fileSystem != null) {
+            fileSystem.close();
+        }
+
+        return classpathUrls;
+    }
+
     public static TreeSet<DriverRecord> readDriverRecords(String resourceName) throws Exception {
 
         Path myPath;
         FileSystem fileSystem = null;
 
-        if (resourceName != null && resourceName.length() > 0) {
+        if (resourceName != null && !resourceName.isEmpty()) {
             myPath = new File(resourceName).toPath();
         } else {
             URL resourceUrl = H2MigrationTool.class.getResource("/drivers");
@@ -280,6 +335,13 @@ public class H2MigrationTool {
         }
     }
 
+    public static URL[] getClassURLs(URL url) throws URISyntaxException, IOException {
+        ArrayList<URL> urls = new ArrayList<>(readCompressionLibs());
+        urls.add(url);
+
+        return urls.toArray(new URL[urls.size()]);
+    }
+
     public static void readDriverRecord(final URL url) {
         try {
             LOGGER.fine("Load Driver from: " + url.toExternalForm());
@@ -289,7 +351,7 @@ public class H2MigrationTool {
 
             AccessController.doPrivileged((PrivilegedExceptionAction<Void>) () -> {
                 try (URLClassLoader loader = new URLClassLoader(
-                        new URL[] {url},
+                        getClassURLs(url),
                         ClassLoader.getPlatformClassLoader())) {
                     Class<?> classToLoad = loader.loadClass("org.h2.Driver");
                     Method method = classToLoad.getDeclaredMethod("load");
@@ -338,7 +400,7 @@ public class H2MigrationTool {
     public static Driver loadDriver(DriverRecord driverRecord) throws PrivilegedActionException {
         return AccessController.doPrivileged((PrivilegedExceptionAction<Driver>) () -> {
             URLClassLoader loader =
-                    new URLClassLoader(new URL[] {driverRecord.url},
+                    new URLClassLoader(getClassURLs(driverRecord.url),
                             ClassLoader.getPlatformClassLoader());
             Class<?> classToLoad = loader.loadClass("org.h2.Driver");
             Method method = classToLoad.getDeclaredMethod("load");
@@ -444,9 +506,9 @@ public class H2MigrationTool {
         options.addOption("u", "user", true, "The database username.");
         options.addOption("p", "password", true, "The database password.");
         options.addOption("s", "script-file", true, "The export script file.");
-        options.addOption("c", "compression", true, "The compression method [ZIP, GZIP]");
+        options.addOption("c", "compression", true, "The compression method [KANZI, BZIP2, ZIP, GZIP]");
         options.addOption(Option.builder("o").longOpt("options").hasArgs().valueSeparator(' ')
-                .desc("The upgrade options [QUIRKS_MODE VARIABLE_BINARY]").build());
+                                  .desc("The upgrade options [QUIRKS_MODE VARIABLE_BINARY]").get());
         options.addOption(null, "force", false, "Overwrite files and continue on failure.");
         options.addOption("h", "help", false, "Show the help message.");
 
@@ -464,13 +526,7 @@ public class H2MigrationTool {
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
-                        try {
-                            UIManager.setLookAndFeel(NimbusLookAndFeel.class.getName());
-                        } catch (ClassNotFoundException | InstantiationException
-                                | IllegalAccessException
-                                | UnsupportedLookAndFeelException ex) {
-                            LOGGER.log(Level.SEVERE, "Error when setting the NIMBUS L&F", ex);
-                        }
+                        FlatLightLaf.setup();
 
                         try {
                             H2MigrationTool.readDriverRecords();
@@ -577,20 +633,9 @@ public class H2MigrationTool {
     }
 
     private void executeCommands(Connection connection, List<String> commands) throws Exception {
-        Statement st = null;
-        try {
-            st = connection.createStatement();
+        try (Statement st = connection.createStatement()) {
             for (String s : commands) {
                 st.executeUpdate(s);
-            }
-            st.close();
-        } finally {
-            if (st != null) {
-                try {
-                    st.close();
-                } catch (SQLException ex) {
-                    LOGGER.log(Level.SEVERE, "Failed to close statement.", ex);
-                }
             }
         }
     }
@@ -650,10 +695,9 @@ public class H2MigrationTool {
     public ScriptResult writeScript(DriverRecord driverRecord, String databaseFileName,
             String user,
             String password, String scriptFileName, String options, String connectionParameters)
-            throws SQLException, ClassNotFoundException, NoSuchMethodException,
-            InstantiationException,
-            IllegalAccessException, IllegalArgumentException, InvocationTargetException,
-            PrivilegedActionException {
+            throws SQLException,
+                           IllegalArgumentException,
+                           PrivilegedActionException {
 
         Properties properties = new Properties();
         properties.setProperty("user", user);
@@ -681,7 +725,7 @@ public class H2MigrationTool {
                         .doPrivileged((PrivilegedExceptionAction<ScriptResult>) () -> {
                             try (URLClassLoader loader =
                                     new URLClassLoader(
-                                            new URL[] {driverRecord.url},
+                                            getClassURLs(driverRecord.url),
                                             ClassLoader.getPlatformClassLoader())) {
                                 Class<?>[] argClasses =
                                         new Class<?>[] {Connection.class, String.class,
@@ -730,7 +774,7 @@ public class H2MigrationTool {
 
         return AccessController.doPrivileged((PrivilegedExceptionAction<ScriptResult>) () -> {
             try (URLClassLoader loader =
-                    new URLClassLoader(new URL[] {driverRecord.url},
+                    new URLClassLoader(getClassURLs(driverRecord.url),
                             ClassLoader.getPlatformClassLoader())) {
                 Class<?> classToLoad = Class.forName("org.h2.tools.Recover", true, loader);
                 Class<?>[] argClasses = new Class<?>[] {String.class, String.class};
@@ -829,7 +873,13 @@ public class H2MigrationTool {
             } else if (modifiedCompression != null && modifiedCompression.endsWith("ZIP")
                     && !modifiedScriptFileName.toLowerCase().endsWith(".zip")) {
                 modifiedScriptFileName = modifiedScriptFileName + ".zip";
-            }
+            } else if (modifiedCompression != null && modifiedCompression.endsWith("BZIP2")
+                    && !modifiedScriptFileName.toLowerCase().endsWith(".bz2")) {
+                modifiedScriptFileName = modifiedScriptFileName + ".bz2";
+            } else if (modifiedCompression != null && modifiedCompression.endsWith("KANZI")
+                    && !modifiedScriptFileName.toLowerCase().endsWith(".knz")) {
+                modifiedScriptFileName = modifiedScriptFileName + ".knz";
+            } 
 
             readHooks(versionFrom);
             try {
@@ -890,9 +940,35 @@ public class H2MigrationTool {
                             modifiedDatabaseFileName.length() - ".sql.zip".length());
             success = true;
 
+        } else if (modifiedDatabaseFileName.toLowerCase().endsWith(".sql.knz")) {
+            LOGGER.info(
+                    "Found Compressed SQL Script " + modifiedDatabaseFileName
+                            + " which will be imported directly.");
+
+            modifiedCompression = "COMPRESSION KANZI";
+
+            modifiedScriptFileName = modifiedDatabaseFileName;
+            modifiedDatabaseFileName =
+                    databaseFileName.substring(0,
+                            modifiedDatabaseFileName.length() - ".sql.knz".length());
+            success = true;
+
+        } else if (modifiedDatabaseFileName.toLowerCase().endsWith(".sql.bz2")) {
+            LOGGER.info(
+                    "Found Compressed SQL Script " + modifiedDatabaseFileName
+                            + " which will be imported directly.");
+
+            modifiedCompression = "COMPRESSION BZIP";
+
+            modifiedScriptFileName = modifiedDatabaseFileName;
+            modifiedDatabaseFileName =
+                    databaseFileName.substring(0,
+                            modifiedDatabaseFileName.length() - ".sql.bz2".length());
+            success = true;
+
         } else {
             LOGGER.warning("Can't process the file " + modifiedDatabaseFileName
-                    + ".\nOnly *.mv.db, *.sql, *.sql.gz or *.sql.zip files are supported.");
+                    + ".\nOnly *.mv.db, *.sql, *.sql.bz2, *sql.knz, *.sql.gz or *.sql.zip files are supported.");
         }
 
         String options =
@@ -938,12 +1014,9 @@ public class H2MigrationTool {
         String modifiedDatabaseFileName = databaseFileName;
         String modifiedScriptFileName = scriptFileName;
 
-        FilenameFilter filenameFilter = new FilenameFilter() {
-            @Override
-            public boolean accept(File dir, String name) {
-                String filename = name.toLowerCase();
-                return filename.endsWith(".mv.db");
-            }
+        FilenameFilter filenameFilter = (dir, name) -> {
+            String filename = name.toLowerCase();
+            return filename.endsWith(".mv.db");
         };
 
         File folder = new File(modifiedDatabaseFileName);
@@ -998,6 +1071,12 @@ public class H2MigrationTool {
             } else if (compression != null && compression.endsWith("ZIP")
                     && !modifiedScriptFileName.toLowerCase().endsWith(".zip")) {
                 modifiedScriptFileName = modifiedScriptFileName + ".zip";
+            } else if (compression != null && compression.endsWith("BZIP2")
+                    && !modifiedScriptFileName.toLowerCase().endsWith(".bz2")) {
+                modifiedScriptFileName = modifiedScriptFileName + ".bz2";
+            } else if (compression != null && compression.endsWith("KANZI")
+                    && !modifiedScriptFileName.toLowerCase().endsWith(".knz")) {
+                modifiedScriptFileName = modifiedScriptFileName + ".knz";
             }
 
             boolean success = false;
