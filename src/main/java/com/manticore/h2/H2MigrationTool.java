@@ -154,8 +154,10 @@ public class H2MigrationTool {
         try (Stream<Path> paths = Files.find(parentPath, depth, (path, attr) -> {
             if (attr.isRegularFile()) {
                 String pathName = path.getFileName().toString().toLowerCase();
-                return (prefix==null || prefix.isEmpty() || pathName.startsWith(prefix.toLowerCase()))
-                        && (suffix==null || suffix.isEmpty() || pathName.endsWith(suffix.toLowerCase()));
+                return (prefix == null || prefix.isEmpty()
+                        || pathName.startsWith(prefix.toLowerCase()))
+                        && (suffix == null || suffix.isEmpty()
+                                || pathName.endsWith(suffix.toLowerCase()));
             }
             return false;
         })) {
@@ -228,8 +230,8 @@ public class H2MigrationTool {
             try {
                 fileSystem = FileSystems.getFileSystem(resourceUri);
             } catch (Exception e) {
-            fileSystem = FileSystems.newFileSystem(resourceUri,
-                    Collections.emptyMap());
+                fileSystem = FileSystems.newFileSystem(resourceUri,
+                        Collections.emptyMap());
             }
             myPath = fileSystem.getPath("/");
         } else {
@@ -508,9 +510,10 @@ public class H2MigrationTool {
         options.addOption("u", "user", true, "The database username.");
         options.addOption("p", "password", true, "The database password.");
         options.addOption("s", "script-file", true, "The export script file.");
-        options.addOption("c", "compression", true, "The compression method [KANZI, BZIP2, ZIP, GZIP]");
+        options.addOption("c", "compression", true,
+                "The compression method [KANZI, BZIP2, ZIP, GZIP]");
         options.addOption(Option.builder("o").longOpt("options").hasArgs().valueSeparator(' ')
-                                  .desc("The upgrade options [QUIRKS_MODE VARIABLE_BINARY]").get());
+                .desc("The upgrade options [QUIRKS_MODE VARIABLE_BINARY]").get());
         options.addOption(null, "force", false, "Overwrite files and continue on failure.");
         options.addOption("h", "help", false, "Show the help message.");
 
@@ -698,8 +701,8 @@ public class H2MigrationTool {
             String user,
             String password, String scriptFileName, String options, String connectionParameters)
             throws SQLException,
-                           IllegalArgumentException,
-                           PrivilegedActionException {
+            IllegalArgumentException,
+            PrivilegedActionException {
 
         Properties properties = new Properties();
         properties.setProperty("user", user);
@@ -881,7 +884,7 @@ public class H2MigrationTool {
             } else if (modifiedCompression != null && modifiedCompression.endsWith("KANZI")
                     && !modifiedScriptFileName.toLowerCase().endsWith(".knz")) {
                 modifiedScriptFileName = modifiedScriptFileName + ".knz";
-            } 
+            }
 
             readHooks(versionFrom);
             try {

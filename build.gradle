@@ -290,6 +290,9 @@ license {
 }
 
 mavenPublishing {
+    publishToMavenCentral()
+    signAllPublications()
+
     coordinates(group, "h2migrationtool", version)
 
     pom {
