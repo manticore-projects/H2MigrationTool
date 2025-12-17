@@ -1,5 +1,7 @@
 /*
- * Copyright (C) 2020 Andreas Reichel<andreas@manticore-projects.com>
+ * H2MigrationTool is a Graphical User Application for Recovering and Migration H2 Database files.
+ *
+ * Copyright (C) 2020-2023 Andreas Reichel<andreas@manticore-projects.com>
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
