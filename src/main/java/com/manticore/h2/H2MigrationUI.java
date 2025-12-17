@@ -354,7 +354,7 @@ public class H2MigrationUI extends JFrame {
                                                 String compression =
                                                         (String) compressionBox.getSelectedItem();
                                                 if (compression != null
-                                                        && compression.length() > 0) {
+                                                        && !compression.isEmpty()) {
                                                     compression = "COMPRESSION " + compression;
                                                 }
 
@@ -591,7 +591,7 @@ public class H2MigrationUI extends JFrame {
     private final JList<DriverRecord> fromVersionList = new JList<>();
     private final JList<DriverRecord> toVersionList = new JList<>();
     private final JComboBox<String> compressionBox =
-            new JComboBox<>(new String[] {"", "ZIP", "GZIP"});
+            new JComboBox<>(new String[] {"", "KANZI", "BZIP2", "ZIP", "GZIP"});
     private final JComboBox<String> repairModeBox =
             new JComboBox<>(new String[] {"", "REPAIR", "WORK-AROUND"});
     private final JCheckBox varbinaryBox = new JCheckBox("Convert BINARY to VARBINARY", false);
@@ -831,15 +831,12 @@ public class H2MigrationUI extends JFrame {
         dialog.pack();
 
         worker.addPropertyChangeListener(
-                new PropertyChangeListener() {
-                    @Override
-                    public void propertyChange(PropertyChangeEvent event) {
-                        if ("state".equals(event.getPropertyName())
-                                && SwingWorker.StateValue.DONE == event.getNewValue()) {
-                            closeAction.setEnabled(true);
-                            cancelAction.setEnabled(false);
-                            dialog.setCursor(Cursor.getDefaultCursor());
-                        }
+                event -> {
+                    if ("state".equals(event.getPropertyName())
+                            && SwingWorker.StateValue.DONE == event.getNewValue()) {
+                        closeAction.setEnabled(true);
+                        cancelAction.setEnabled(false);
+                        dialog.setCursor(Cursor.getDefaultCursor());
                     }
                 });
         worker.execute();
@@ -921,17 +918,20 @@ public class H2MigrationUI extends JFrame {
         add(headerTextArea, BorderLayout.NORTH);
 
         databaseFileList.setPrototypeCellValue(new File(String.copyValueOf(new char[255])));
+        databaseFileList.setVisibleRowCount(4);
 
         listModel.clear();
         listModel.addAll(H2MigrationTool.getDriverRecords());
 
         fromVersionList.setModel(listModel);
         fromVersionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        fromVersionList.setVisibleRowCount(4);
         fromVersionList.setSelectedValue(
                 H2MigrationTool.getDriverRecord(H2MigrationTool.getDriverRecords(), 1, 4), true);
 
         toVersionList.setModel(listModel);
         toVersionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        toVersionList.setVisibleRowCount(4);
         toVersionList.setSelectedValue(
                 H2MigrationTool.getDriverRecord(H2MigrationTool.getDriverRecords(), 2, 0), true);
 
@@ -971,7 +971,12 @@ public class H2MigrationUI extends JFrame {
         constraints.gridwidth = 3;
         constraints.gridheight = 2;
         constraints.fill = GridBagConstraints.BOTH;
-        centerNorthPanel.add(new JScrollPane(databaseFileList), constraints);
+
+        JScrollPane databaseFileListScrollPane = new JScrollPane(databaseFileList);
+        databaseFileListScrollPane.setWheelScrollingEnabled(true);
+
+
+        centerNorthPanel.add(databaseFileListScrollPane, constraints);
 
         constraints.gridx += 3;
         constraints.weightx = 1.0;
@@ -1161,7 +1166,7 @@ public class H2MigrationUI extends JFrame {
 
         add(southPanel, BorderLayout.SOUTH);
 
-        setPreferredSize(new Dimension(480, 720));
+        //setPreferredSize(new Dimension(480, 720));
         pack();
         setMinimumSize(getSize());
 
