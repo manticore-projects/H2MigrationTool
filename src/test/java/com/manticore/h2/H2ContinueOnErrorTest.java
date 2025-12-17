@@ -35,24 +35,24 @@ import java.util.regex.Pattern;
 public class H2ContinueOnErrorTest {
     public final Logger LOGGER = Logger.getLogger(H2ContinueOnErrorTest.class.getName());
 
-    public final static String VERSION_STR ="2.4.240";
+    public final static String VERSION_STR = "2.4.240";
 
     public static final String DDL_STR =
             "drop table IF EXISTS B cascade;\n" +
-            "drop table IF EXISTS A cascade;\n" +
-            "\n" +
-            "CREATE TABLE a\n" +
-            "  (\n" +
-            "     field1 varchar(1) UNIQUE \n" +
-            "  );\n" +
-            "\n" +
-            "CREATE TABLE b\n" +
-            "  (\n" +
-            "     field2 varchar(1)\n" +
-            "  );\n" +
-            "\n" +
-            "ALTER TABLE b\n" +
-            "  ADD FOREIGN KEY (field2) REFERENCES a(field1);";
+                    "drop table IF EXISTS A cascade;\n" +
+                    "\n" +
+                    "CREATE TABLE a\n" +
+                    "  (\n" +
+                    "     field1 varchar(1) UNIQUE \n" +
+                    "  );\n" +
+                    "\n" +
+                    "CREATE TABLE b\n" +
+                    "  (\n" +
+                    "     field2 varchar(1)\n" +
+                    "  );\n" +
+                    "\n" +
+                    "ALTER TABLE b\n" +
+                    "  ADD FOREIGN KEY (field2) REFERENCES a(field1);";
 
     public static ArrayList<String> dbFileUriStr = new ArrayList<>();
 
@@ -73,9 +73,9 @@ public class H2ContinueOnErrorTest {
         Driver driver = H2MigrationTool.loadDriver(VERSION_STR);
 
         try (Connection con =
-                     driver.connect("jdbc:h2:" + dbFileUriStr.get(dbFileUriStr.size() - 1),
-                             properties);
-             Statement st = con.createStatement()) {
+                driver.connect("jdbc:h2:" + dbFileUriStr.get(dbFileUriStr.size() - 1),
+                        properties);
+                Statement st = con.createStatement()) {
 
             for (String sqlStr : DDL_STR.split(";")) {
                 st.executeUpdate(sqlStr);

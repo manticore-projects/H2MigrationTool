@@ -1168,7 +1168,7 @@ public class H2MigrationUI extends JFrame {
 
         add(southPanel, BorderLayout.SOUTH);
 
-        //setPreferredSize(new Dimension(480, 720));
+        // setPreferredSize(new Dimension(480, 720));
         pack();
         setMinimumSize(getSize());
 
