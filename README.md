@@ -53,4 +53,4 @@ java -cp H2MigrationTool.jar com.manticore.Recovery                             
 
 ## Graphical User Interface
 
-![image](https://user-images.githubusercontent.com/18080123/120748212-9bea7980-c52c-11eb-96f0-101f0e47e3eb.png)
+<img width="644" height="628" alt="image" src="https://github.com/user-attachments/assets/c0cd79f0-d111-4dd9-98b9-3ad7e3a43828" />
