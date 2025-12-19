@@ -1,5 +1,4 @@
-commit d9afa8602
-d9afa8602 (don't leak a connection, 2013-05-06)
+commit 6c42717a1
 6c42717a1 (fix some connection leaks, and an assignment error in testRecoverLobInDatabase() where it was creating the statement from the wrong connection, 2013-05-06)
 1140d4a98 (fix connection leaks in the testing code. Prevents my machine from running out of sockets during soak tests, 2013-05-06)
 b272a2dfd (Issue 442: groovy patch for SourceCompiler (function ALIAS), 2013-05-07)
@@ -9999,3 +9998,4 @@ ebecac178 (fix faulty assertion about chunks and free spase bit set always being
 f05f0b2ee (invalidate cached EXISTS() result, 2025-11-01)
 9db82f105 (Merge pull request #4300 from h2database/issue_4299, 2025-11-02)
 93c0c12ae (Merge remote-tracking branch 'origin/master' into #4242FilterStaleInternalLOBCommands, 2025-11-04)
+fa6d58744 (feat: harden the `RunScript` command to filter possible stale LOB commands (left from an interrupted restore), 2025-12-19)
